@@ -16,8 +16,9 @@ from ..IO import read_input as rin
 from ..LAQA import laqa_init
 from ..RS import rs_init
 
+from ..common import aiida_major_version
 
-def initialize():
+def initialize(init_struc_data=None):
     # ---------- start
     print(utility.get_date())
     print(utility.get_version())
@@ -99,7 +100,11 @@ def initialize():
         with open('cryspy.out', 'a') as fout:
             fout.write('# ---------- Load initial structure data\n')
             fout.write('Load ./data/pkl_data/init_struc_data.pkl\n\n')
-        init_struc_data = pkl_data.load_init_struc()
+        if aiida_major_version >= 1:
+            if init_struc_data is None:
+                raise ValueError('init_struc_data must not be None.')
+        else:
+            init_struc_data = pkl_data.load_init_struc()
         # -- check
         if not rin.tot_struc == len(init_struc_data):
             raise ValueError('rin.tot_struc = {0},'
@@ -126,7 +131,7 @@ def initialize():
     elif rin.algo == 'LAQA':
         laqa_init.initialize(stat)
     elif rin.algo == "EA":
-        ea_init.initialize(stat, rslt_data)
+        stat, ea_id_data, ea_data, rslt_data = ea_init.initialize(stat, rslt_data)
 
     # ---------- initialize etc
     if rin.kpt_flag:
@@ -144,3 +149,5 @@ def initialize():
     if rin.stress_step_flag:
         stress_step_data = {}
         pkl_data.save_stress_step(stress_step_data)
+
+    return init_struc_data, opt_struc_data, stat, rslt_data, ea_id_data, ea_data

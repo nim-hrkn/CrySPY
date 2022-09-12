@@ -12,16 +12,24 @@ from ..IO import out_results
 from ..IO import change_input, io_stat, pkl_data
 from ..IO import read_input as rin
 
+from ..common import aiida_major_version
 
-def append_struc(stat, init_struc_data):
+
+def append_struc(stat, init_struc_data, opt_struc_data, rslt_data):
     # ---------- append structures by EA
     print('\n# ---------- Append structures by EA')
     with open('cryspy.out', 'a') as fout:
         fout.write('\n# ---------- Append structures by EA\n')
 
     # ---------- load data
-    opt_struc_data = pkl_data.load_opt_struc()
-    rslt_data = pkl_data.load_rslt()
+    if aiida_major_version >= 1:
+        if opt_struc_data is None:
+            raise ValueError('opt_struc_data must not be None.')
+        if rslt_data is None:
+            raise ValueError('rslt_data must not be None.')
+    else:
+        opt_struc_data = pkl_data.load_opt_struc()
+        rslt_data = pkl_data.load_rslt()
 
     # ---------- fitness
     fitness = rslt_data['E_eV_atom'].to_dict()    # {ID: energy, ..,}
@@ -104,4 +112,7 @@ def append_struc(stat, init_struc_data):
     io_stat.write_stat(stat)
 
     # ---------- return
-    return init_struc_data
+    if aiida_major_version>=1:
+        return init_struc_data, stat, ea_data
+    else:
+        return init_struc_data

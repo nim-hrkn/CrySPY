@@ -8,6 +8,8 @@ from ..IO import out_results
 from ..IO import io_stat, pkl_data
 from ..IO import read_input as rin
 
+from ..common import aiida_major_version
+
 
 def initialize(stat, rslt_data):
     # ---------- log
@@ -62,3 +64,6 @@ def initialize(stat, rslt_data):
     io_stat.set_common(stat, 'generation', gen)
     io_stat.set_id(stat, 'id_queueing', id_queueing)
     io_stat.write_stat(stat)
+
+    if aiida_major_version >= 1:
+        return stat, ea_id_data, ea_data, rslt_data

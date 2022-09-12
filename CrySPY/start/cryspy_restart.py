@@ -14,8 +14,10 @@ from ..IO import read_input as rin
 from ..LAQA import laqa_restart
 from ..RS import rs_restart
 
+from ..common import aiida_major_version
 
-def restart():
+
+def restart(init_struc_data=None):
     print('\n\n')
     print(utility.get_date())
     print(utility.get_version())
@@ -29,12 +31,16 @@ def restart():
     rin.diffinstat(stat)
 
     # ---------- load init_struc_data for appending structures
-    init_struc_data = pkl_data.load_init_struc()
+    if aiida_major_version >= 1:
+        if init_struc_data is None:
+            raise ValueError('init_struc_data must not be None.')
+    else:
+        init_struc_data = pkl_data.load_init_struc()
 
     # ---------- append structures
     if len(init_struc_data) < rin.tot_struc:
         prev_nstruc = len(init_struc_data)
-        init_struc_data = append_struc(init_struc_data)
+        init_struc_data, stat, ea_data = append_struc(init_struc_data)
         # ------ RS
         if rin.algo == 'RS':
             rs_restart.restart(stat, prev_nstruc)

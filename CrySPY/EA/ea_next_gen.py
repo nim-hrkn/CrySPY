@@ -10,8 +10,10 @@ from ..IO import out_results
 from ..IO import change_input, io_stat, pkl_data
 from ..IO import read_input as rin
 
+from ..common import aiida_major_version
 
-def next_gen(stat, init_struc_data, opt_struc_data, rslt_data, ea_id_data):
+
+def next_gen(stat, init_struc_data, opt_struc_data, rslt_data, ea_id_data, ea_data=None):
     # ---------- ea_id_data
     gen, id_queueing, id_running = ea_id_data
 
@@ -27,7 +29,12 @@ def next_gen(stat, init_struc_data, opt_struc_data, rslt_data, ea_id_data):
     c_fitness = c_rslt['E_eV_atom'].to_dict()    # {ID: energy, ...}
 
     # ---------- load ea_data, ea_data is used only in this module
-    elite_struc, elite_fitness, ea_info, ea_origin = pkl_data.load_ea_data()
+    if aiida_major_version >= 1:
+        if ea_data is None:
+            raise ValueError('ea_data must not be None.')
+        elite_struc, elite_fitness, ea_info, ea_origin = ea_data
+    else:
+        elite_struc, elite_fitness, ea_info, ea_origin = pkl_data.load_ea_data()
 
     # ---------- instantiate Seclect_parents class
     print('# -- select parents')
@@ -123,3 +130,6 @@ def next_gen(stat, init_struc_data, opt_struc_data, rslt_data, ea_id_data):
     io_stat.set_common(stat, 'generation', gen)
     io_stat.set_id(stat, 'id_queueing', id_queueing)
     io_stat.write_stat(stat)
+
+    if aiida_major_version >= 1:
+        return stat, ea_id_data, ea_data, rslt_data

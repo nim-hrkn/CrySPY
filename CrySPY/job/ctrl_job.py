@@ -22,14 +22,25 @@ from ..IO.out_results import out_laqa_energy, out_laqa_bias
 from ..LAQA.calc_score import calc_laqa_bias
 from ..LAQA import laqa_next_selection
 
+from ..common import aiida_major_version
+
 
 class Ctrl_job:
 
-    def __init__(self, stat, init_struc_data):
+    def __init__(self, stat, init_struc_data,
+                 opt_struc_data=None, rslt_data=None, ea_id=None):
         self.stat = stat
         self.init_struc_data = init_struc_data
-        self.opt_struc_data = pkl_data.load_opt_struc()
-        self.rslt_data = pkl_data.load_rslt()
+        if aiida_major_version >= 1:
+            if opt_struc_data is None:
+                raise ValueError('opt_struc_data must not be None.')
+            if rslt_data is None:
+                raise ValueError('rslt_data must not be None.')
+            self.opt_struc_data = opt_struc_data
+            self.rslt_data = rslt_data
+        else:
+            self.opt_struc_data = pkl_data.load_opt_struc()
+            self.rslt_data = pkl_data.load_rslt()
         self.recheck = False
         self.logic_next = False
         # ---------- for each algorithm
@@ -48,8 +59,13 @@ class Ctrl_job:
              self.laqa_struc, self.laqa_energy,
              self.laqa_bias, self.laqa_score) = pkl_data.load_laqa_data()
         elif rin.algo == 'EA':
-            (self.gen, self.id_queueing,
-             self.id_running) = pkl_data.load_ea_id()
+            if aiida_major_version >= 1:
+                if ea_id is None:
+                    raise ValueError('ea_is must not be None.')
+                (self.gen, self.id_queueing, self.id_running) = ea_id
+            else:
+                (self.gen, self.id_queueing,
+                 self.id_running) = pkl_data.load_ea_id()
             # do not have to load ea_data here.
             # ea_data is used only in ea_next_gen.py
         # ---------- for option
@@ -104,6 +120,8 @@ class Ctrl_job:
             except IOError:
                 self.stage_stat[cid] = 'no_file'
                 self.job_stat[cid] = 'no_file'
+        if aiida_major_version >= 1:
+            return self.tmp_running, self.tmp_queueing, self.job_stat, self.stage_stat
 
     def set_recalc(self):
         # ---------- check id
@@ -114,7 +132,7 @@ class Ctrl_job:
         # ---------- append IDs to the head of id_queueing
         self.id_queueing = rin.recalc + self.id_queueing
         io_stat.set_id(self.stat, 'id_queueing', self.id_queueing)
-        self.save_id_data()
+        ea_id_data = self.save_id_data()
         # ---------- log and out
         print('# -- Recalc')
         print('Append {} to the head of id_queueing'.format(rin.recalc))
@@ -130,13 +148,17 @@ class Ctrl_job:
         print('Clear recalc in cryspy.in')
         io_stat.set_input_common(self.stat, 'option', 'recalc', '')
         io_stat.write_stat(self.stat)
+        if aiida_major_version >= 1:
+            return self.stat, ea_id_data
 
     def handle_job(self):
         print('\n# ---------- job status')
+        work_path_dic = {}
         for cid in self.tmp_running:
             # ---------- set work_path and current_id
             self.work_path = './work/{:06}/'.format(cid)
             self.current_id = cid
+            work_path_dic[cid] = self.work_path
             # ---------- handle job
             if self.job_stat[cid] == 'submitted':
                 print('ID {:>6}: still queueing or running'.format(cid))
@@ -152,6 +174,7 @@ class Ctrl_job:
             else:
                 raise ValueError('Unexpected error in {}stat_job'.format(
                     self.work_path))
+        return self.job_stat, work_path_dic
 
     def ctrl_done(self):
         self.current_stage = self.stage_stat[self.current_id]
@@ -219,6 +242,8 @@ class Ctrl_job:
         # ---------- log
         print('    submitted job, ID {0:>6} Stage {1}'.format(
             self.current_id, self.current_stage + 1))
+
+        return self.stat
 
     def ctrl_collect(self):
         # ---------- energy step
@@ -560,9 +585,12 @@ class Ctrl_job:
         # ---------- move to fin
         self.mv_fin()
         # ---------- update status
-        self.update_status(operation='fin')
+        stat, id_data = self.update_status(operation='fin')
         # ---------- recheck
         self.recheck = True
+        if aiida_major_version >= 1:
+            if rin.algo == 'EA':
+                return stat, id_data, self.rslt_data
 
     def update_status(self, operation):
         # ---------- update status
@@ -581,7 +609,9 @@ class Ctrl_job:
         io_stat.set_id(self.stat, 'id_queueing', self.id_queueing)
         io_stat.write_stat(self.stat)
         # ---------- save id_data
-        self.save_id_data()
+        id_data = self.save_id_data()
+        if aiida_major_version >= 1:
+            return self.stat, id_data
 
     def prepare_jobfile(self):
         if not os.path.isfile('./calc_in/' + rin.jobfile):
@@ -606,7 +636,7 @@ class Ctrl_job:
                                     self.current_id, i))
                     break
 
-    def next_sg(self):
+    def next_sg(self, ea_data=None):
         '''
         next selection or generation
         '''
@@ -615,7 +645,11 @@ class Ctrl_job:
         if rin.algo == 'LAQA':
             self.next_select_LAQA()
         if rin.algo == 'EA':
-            self.next_gen_EA()
+            if aiida_major_version >= 1:
+                stat, ea_id_data, ea_data, rslt_data = self.next_gen_EA(ea_data)
+                return stat, ea_id_data, ea_data, rslt_data
+            else:
+                self.next_gen_EA()
 
     def next_select_BO(self):
         # ---------- log and out
@@ -660,7 +694,7 @@ class Ctrl_job:
                      self.laqa_energy, self.laqa_bias, self.laqa_score)
         laqa_next_selection.next_selection(self.stat, laqa_id_data, laqa_data)
 
-    def next_gen_EA(self):
+    def next_gen_EA(self, ea_data):
         # ---------- log and out
         with open('cryspy.out', 'a') as fout:
             fout.write('\nDone generation {}\n\n'.format(self.gen))
@@ -677,8 +711,13 @@ class Ctrl_job:
             raise SystemExit()
         # ---------- EA
         ea_id_data = (self.gen, self.id_queueing, self.id_running)
-        ea_next_gen.next_gen(self.stat, self.init_struc_data,
-                             self.opt_struc_data, self.rslt_data, ea_id_data)
+        stat, ea_id_data, ea_data, rslt_data = ea_next_gen.next_gen(self.stat,
+                                                                    self.init_struc_data,
+                                                                    self.opt_struc_data, 
+                                                                    self.rslt_data, 
+                                                                    ea_id_data,
+                                                                    ea_data)
+        return stat, ea_id_data, ea_data, rslt_data
 
     def save_id_data(self):
         # ---------- save id_data
@@ -696,6 +735,7 @@ class Ctrl_job:
         if rin.algo == 'EA':
             ea_id_data = (self.gen, self.id_queueing, self.id_running)
             pkl_data.save_ea_id(ea_id_data)
+            return ea_id_data
 
     def save_data(self):
         # ---------- save ??_data
