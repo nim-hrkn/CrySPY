@@ -13,18 +13,19 @@ from CrySPY.start import cryspy_init, cryspy_restart
 from CrySPY.IO import pkl_data
 from CrySPY.common import aiida_major_version
 
+
 def main():
     # ---------- lock
     if os.path.isfile('lock_cryspy'):
         raise SystemExit('lock_cryspy file exists')
     else:
-        with open('lock_cryspy', 'w') as f:
+        with open('lock_cryspy', 'w') as _:
             pass    # create vacant file
 
     # ---------- initialize
     if not os.path.isfile('cryspy.stat'):
-        if aiida_major_version>=1:
-            init_struc_data, opt_struc_data, stat, rslt_data, ea_id_data, ea_data = cryspy_init.initialize()
+        if aiida_major_version >= 1:
+            init_struc_data, opt_struc_data, stat, rslt_data, ea_id, ea_data = cryspy_init.initialize()
         else:
             cryspy_init.initialize()
         os.remove('lock_cryspy')
@@ -56,7 +57,7 @@ def main():
     tmp_running, tmp_queueing, job_stat, stage_stat = jobs.check_job()
 
     # ---------- handle job
-    job_stat, work_path_dic = jobs.handle_job()
+    job_stat, work_path_dic, rslt_data, opt_struc, id_data = jobs.handle_job()
 
     # ---------- recheck for skip and done
     if jobs.id_queueing:
