@@ -11,12 +11,9 @@ from ..IO.rin_class import Rin
 from ..common import aiida_major_version
 
 
-def initialize(stat, rslt_data):
-    rin = Rin(stat)
-    if aiida_major_version>=1:
-        tot_struc = int(stat["basic"]["tot_struc"])
-    else:
-        tot_struc = rin.tot_struc
+def initialize(cryspy_in, stat, rslt_data):
+    rin = Rin(cryspy_in)
+    tot_struc = int(stat["basic"]["tot_struc"])
     # ---------- log
     print('\n# ---------- Initialize evolutionary algorithm')
     print('# ------ Generation 1')

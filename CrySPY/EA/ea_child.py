@@ -12,8 +12,8 @@ from ..IO.rin_class import Rin
 from ..common import aiida_major_version
 
 
-def child_gen(sp, init_struc_data, stat):
-    rin = Rin(stat)
+def child_gen(sp, init_struc_data, cryspy_in, stat):
+    rin = Rin(cryspy_in)
     if aiida_major_version>=1:
         tot_struc = int(stat["basic"]["tot_struc"])
     else:

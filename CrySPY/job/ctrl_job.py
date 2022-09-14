@@ -28,9 +28,10 @@ from ..common import aiida_major_version
 
 class Ctrl_job:
 
-    def __init__(self, stat, init_struc_data,
+    def __init__(self, cryspy_in, stat, init_struc_data,
                  opt_struc_data=None, rslt_data=None, ea_id=None):
-        rin = Rin(stat)
+        self.cryspy_in = cryspy_in
+        rin = Rin(cryspy_in)
         self.rin = rin
         self.stat = stat
         self.init_struc_data = init_struc_data
@@ -311,7 +312,7 @@ class Ctrl_job:
         if not dry_run:
             with open('sublog', 'w') as logf:
                 subprocess.Popen([rin.jobcmd, rin.jobfile],
-                                stdout=logf, stderr=logf)
+                                 stdout=logf, stderr=logf)
         os.chdir('../../')    # go back to ..
         # ---------- save status
         io_stat.set_stage(self.stat, self.current_id, self.current_stage + 1)
@@ -614,7 +615,7 @@ class Ctrl_job:
             else:
                 select_code.next_struc(next_struc_data, self.current_id,
                                        self.work_path)
-            if aiida_major_version>=1:
+            if aiida_major_version >= 1:
                 self.submit_next_struc(dry_run=True)
                 print('ID {:>6}: submit job, Stage 1'.format(self.current_id))
             else:
@@ -648,7 +649,7 @@ class Ctrl_job:
         if not dry_run:
             with open('sublog', 'w') as logf:
                 subprocess.Popen([rin.jobcmd, rin.jobfile],
-                                stdout=logf, stderr=logf)
+                                 stdout=logf, stderr=logf)
         os.chdir('../../')    # go back to csp root dir
 
     def ctrl_skip(self, cid):
@@ -669,7 +670,7 @@ class Ctrl_job:
             Tuples containing,
             _type_: _description_
         """
-        rin =self.rin
+        rin = self.rin
         if cid != self.current_id:
             raise ValueError(f'internal error cid != self.current_id. {cid} {self.current_id}')
         # ---------- log and out
@@ -796,7 +797,7 @@ class Ctrl_job:
         else:
             raise ValueError('operation is wrong')
         io_stat.set_id(self.stat, 'id_queueing', self.id_queueing)
-        io_stat.write_stat(self.stat) # only id_queue
+        io_stat.write_stat(self.stat)  # only id_queue
         # ---------- save id_data
         id_data = self.save_id_data()
         if aiida_major_version >= 1:
@@ -909,12 +910,13 @@ class Ctrl_job:
             raise SystemExit()
         # ---------- EA
         ea_id_data = (self.gen, self.id_queueing, self.id_running)
-        stat, ea_id_data, ea_data, rslt_data, init_struc_data = ea_next_gen.next_gen(self.stat,
-                                                                    self.init_struc_data,
-                                                                    self.opt_struc_data,
-                                                                    self.rslt_data,
-                                                                    ea_id_data,
-                                                                    ea_data)
+        stat, ea_id_data, ea_data, rslt_data, init_struc_data = ea_next_gen.next_gen(self.cryspy_in,
+                                                                                     self.stat,
+                                                                                     self.init_struc_data,
+                                                                                     self.opt_struc_data,
+                                                                                     self.rslt_data,
+                                                                                     ea_id_data,
+                                                                                     ea_data)
         return stat, ea_id_data, ea_data, rslt_data, init_struc_data
 
     def save_id_data(self):

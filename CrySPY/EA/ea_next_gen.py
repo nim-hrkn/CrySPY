@@ -14,8 +14,8 @@ from ..IO.rin_class import Rin
 from ..common import aiida_major_version
 
 
-def next_gen(stat, init_struc_data, opt_struc_data, rslt_data, ea_id_data, ea_data=None):
-    rin = Rin(stat)
+def next_gen(cryspy_in, stat, init_struc_data, opt_struc_data, rslt_data, ea_id_data, ea_data=None):
+    rin = Rin(cryspy_in)
     if aiida_major_version>=1:
         tot_struc = int(stat["basic"]["tot_struc"])
     else:
@@ -55,7 +55,7 @@ def next_gen(stat, init_struc_data, opt_struc_data, rslt_data, ea_id_data, ea_da
 
     # ---------- generate offspring by EA
     print('# -- Generate structures')
-    init_struc_data, eagen = child_gen(sp, init_struc_data, stat)
+    init_struc_data, eagen = child_gen(sp, init_struc_data, cryspy_in, stat)
 
     # ---------- select elite
     if rin.n_elite > 0:

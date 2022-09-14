@@ -20,14 +20,16 @@ class Rin:
         Args:
             cryspy_in (configparser.ConfigParser|str): 'crypy.in' or its configparser instance.
         """
+        print("cryspy_in", cryspy_in)
         if isinstance(cryspy_in, configparser.ConfigParser):
             config = cryspy_in
         elif isinstance(cryspy_in, str):
             # ---------- read cryspy.in
             if not os.path.isfile(cryspy_in):
                 raise IOError(f'Could not find {cryspy_in} file')
-            config = configparser.ConfigParser()
+            config = configparser.ConfigParser(allow_no_value =False )
             config.read(cryspy_in)
+            print(f"called config.read {cryspy_in}")
 
         algo = None
         calc_code = None

@@ -12,7 +12,8 @@ from ..EA import ea_init
 from ..gen_struc.random.random_generation import Rnd_struc_gen
 from ..gen_struc.random.gen_pyxtal import Rnd_struc_gen_pyxtal
 from ..IO import pkl_data, io_stat
-from ..IO import read_input as rin
+# from ..IO import read_input as rin
+from ..IO.rin_class import Rin
 from ..LAQA import laqa_init
 from ..RS import rs_init
 
@@ -30,8 +31,9 @@ def initialize(cryspy_in='cryspy.in', init_struc_data=None):
 
     # ---------- read input
     print(f'Read input file, {cryspy_in}')
+    rin = Rin()
     rin.readin(cryspy_in)          # read input data, cryspy,in
-    stat = io_stat.stat_init()    # initialize stat
+    stat = io_stat.stat_init(cryspy_in)    # initialize stat
     rin.writeout()        # write input data in output file, cryspy.out
     rin.save_stat(stat)   # save input variables in cryspy.stat
 
@@ -134,7 +136,7 @@ def initialize(cryspy_in='cryspy.in', init_struc_data=None):
     elif rin.algo == 'LAQA':
         laqa_init.initialize(stat)
     elif rin.algo == "EA":
-        stat, ea_id_data, ea_data, rslt_data = ea_init.initialize(stat, rslt_data)
+        stat, ea_id_data, ea_data, rslt_data = ea_init.initialize(cryspy_in, stat, rslt_data)
 
     if aiida_major_version==0:
         # ---------- initialize etc

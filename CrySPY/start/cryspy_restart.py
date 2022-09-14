@@ -18,7 +18,7 @@ from ..RS import rs_restart
 from ..common import aiida_major_version
 
 
-def restart(init_struc_data=None, stat):
+def restart(init_struc_data=None, stat=None):
     print('\n\n')
     print(utility.get_date())
     print(utility.get_version())

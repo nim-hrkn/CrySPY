@@ -3,10 +3,12 @@ I/O for cryspy.stat
 '''
 import configparser
 
-from . import read_input as rin
+# from . import read_input as rin
+from ..IO.rin_class import Rin
 
 
-def stat_init():
+def stat_init(cryspy_in='cryspy.in'):
+    rin = Rin(cryspy_in)
     stat = configparser.ConfigParser()
     stat.add_section('basic')
     stat.add_section('structure')
@@ -41,8 +43,35 @@ def stat_read():
 
 
 def write_stat(stat):
-    with open('cryspy.stat', 'w') as f:
-        stat.write(f)
+    """delete 'None' and write them as 'cryspy.stat'
+
+    Args:
+        stat (configparser.ConfigParser): stat
+    """
+    if True:
+        with open('cryspy.stat', 'w') as f:
+            stat.write(f)
+    else:
+        from collections import OrderedDict
+        newdict = OrderedDict()
+        for name1 in stat._sections:
+            # print(name1)
+            name1dict = stat._sections[name1]
+            dellist = []
+            for name2 in name1dict:
+                #print(name2, stat._sections[name1][name2])
+                if stat._sections[name1][name2] == 'None':
+                    dellist.append(name2)
+            print("delete", name1, dellist)
+            for name2 in dellist:
+                name1dict.pop(name2)
+            newdict[name1] = name1dict
+
+        config = configparser.ConfigParser()
+        config.read_dict(dictionary=newdict)
+
+        with open('cryspy.stat', 'w') as f:
+            config.write(f)
 
 
 # ---------- input section
