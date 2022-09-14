@@ -18,7 +18,7 @@ from ..RS import rs_init
 
 from ..common import aiida_major_version
 
-def initialize(init_struc_data=None):
+def initialize(cryspy_in='cryspy.in', init_struc_data=None):
     # ---------- start
     print(utility.get_date())
     print(utility.get_version())
@@ -29,8 +29,8 @@ def initialize(init_struc_data=None):
         fout.write('Start cryspy.py\n\n')
 
     # ---------- read input
-    print('Read input file, cryspy.in')
-    rin.readin()          # read input data, cryspy,in
+    print(f'Read input file, {cryspy_in}')
+    rin.readin(cryspy_in)          # read input data, cryspy,in
     stat = io_stat.stat_init()    # initialize stat
     rin.writeout()        # write input data in output file, cryspy.out
     rin.save_stat(stat)   # save input variables in cryspy.stat
@@ -92,7 +92,8 @@ def initialize(init_struc_data=None):
             fout.write('Generated structures up to ID {}\n\n'.format(
                 len(init_struc_data)-1))
         # ------ save
-        pkl_data.save_init_struc(init_struc_data)
+        if aiida_major_version ==0:
+            pkl_data.save_init_struc(init_struc_data)
     else:
         # ------ load initial structure
         print('\n# --------- Load initial structure data')
@@ -113,7 +114,8 @@ def initialize(init_struc_data=None):
 
     # ---------- initialize opt_struc_data
     opt_struc_data = {}
-    pkl_data.save_opt_struc(opt_struc_data)
+    if aiida_major_version==0:    
+        pkl_data.save_opt_struc(opt_struc_data)
 
     # ---------- initialize rslt_data
     rslt_data = pd.DataFrame(columns=['Spg_num', 'Spg_sym',
@@ -121,7 +123,8 @@ def initialize(init_struc_data=None):
                                       'E_eV_atom', 'Magmom', 'Opt'])
     rslt_data[['Spg_num', 'Spg_num_opt']] = rslt_data[
                                    ['Spg_num', 'Spg_num_opt']].astype(int)
-    pkl_data.save_rslt(rslt_data)
+    if aiida_major_version==0:                            
+        pkl_data.save_rslt(rslt_data)
 
     # ---------- initialize for each algorithm
     if rin.algo == 'RS':
@@ -133,21 +136,22 @@ def initialize(init_struc_data=None):
     elif rin.algo == "EA":
         stat, ea_id_data, ea_data, rslt_data = ea_init.initialize(stat, rslt_data)
 
-    # ---------- initialize etc
-    if rin.kpt_flag:
-        kpt_data = {}
-        pkl_data.save_kpt(kpt_data)
-    if rin.energy_step_flag:
-        energy_step_data = {}
-        pkl_data.save_energy_step(energy_step_data)
-    if rin.struc_step_flag:
-        struc_step_data = {}
-        pkl_data.save_struc_step(struc_step_data)
-    if rin.force_step_flag:
-        force_step_data = {}
-        pkl_data.save_force_step(force_step_data)
-    if rin.stress_step_flag:
-        stress_step_data = {}
-        pkl_data.save_stress_step(stress_step_data)
+    if aiida_major_version==0:
+        # ---------- initialize etc
+        if rin.kpt_flag:
+            kpt_data = {}
+            pkl_data.save_kpt(kpt_data)
+        if rin.energy_step_flag:
+            energy_step_data = {}
+            pkl_data.save_energy_step(energy_step_data)
+        if rin.struc_step_flag:
+            struc_step_data = {}
+            pkl_data.save_struc_step(struc_step_data)
+        if rin.force_step_flag:
+            force_step_data = {}
+            pkl_data.save_force_step(force_step_data)
+        if rin.stress_step_flag:
+            stress_step_data = {}
+            pkl_data.save_stress_step(stress_step_data)
 
     return init_struc_data, opt_struc_data, stat, rslt_data, ea_id_data, ea_data

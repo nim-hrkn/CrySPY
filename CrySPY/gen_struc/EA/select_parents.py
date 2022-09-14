@@ -137,6 +137,8 @@ class Select_parents:
     def _dedupe(self):
         # ---------- remove duplicated structure data
         # ------ initialize
+        print("in dedupe, self.struc_data")
+        print(self.struc_data)
         ncheck = 5
         self.ranking_dedupe = []
         smatcher = StructureMatcher()    # instantiate

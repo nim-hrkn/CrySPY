@@ -136,6 +136,7 @@ def append_struc(init_struc_data):
             len(init_struc_data)-1))
 
     # ---------- save
-    pkl_data.save_init_struc(init_struc_data)
+    if aiida_major_version==0:
+        pkl_data.save_init_struc(init_struc_data)
 
     return init_struc_data

@@ -8,12 +8,12 @@ import os
 from . import io_stat
 
 
-def readin():
+def readin(cryspy_in='cryspy.in'):
     # ---------- read cryspy.in
-    if not os.path.isfile('cryspy.in'):
-        raise IOError('Could not find cryspy.in file')
+    if not os.path.isfile(cryspy_in):
+        raise IOError(f'Could not find {cryspy_in} file')
     config = configparser.ConfigParser()
-    config.read('cryspy.in')
+    config.read(cryspy_in)
 
     # ---------- basic
     # ------ global declaration

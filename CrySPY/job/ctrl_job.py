@@ -81,6 +81,17 @@ class Ctrl_job:
             self.stress_step_data = pkl_data.load_stress_step()
 
     def check_job(self):
+        """check all the job status
+
+        returns self.tmp_running, self.tmp_queueing, self.job_stat, self.stage_stat.
+
+        Raises:
+            SystemExit: ID is wrong in work/{:06}
+
+        Returns:
+            tuples containing,
+            _type_: _description_
+        """
         # ---------- option: recalc
         if rin.recalc:
             self.set_recalc()
@@ -152,6 +163,15 @@ class Ctrl_job:
             return self.stat, ea_id_data
 
     def handle_job(self):
+        """change job status for all the jobs
+
+        Raises:
+            ValueError: jobs_stat contains unknown keyword.
+
+        Returns:
+            tuples containing
+            _type_: _description_
+        """
         print('\n# ---------- job status')
         work_path_dic = {}
         for cid in self.tmp_running:
@@ -163,20 +183,41 @@ class Ctrl_job:
             if self.job_stat[cid] == 'submitted':
                 print('ID {:>6}: still queueing or running'.format(cid))
             elif self.job_stat[cid] == 'done':
-                self.ctrl_done()
+                stat, rslt_data, opt_struc, id_data = self.ctrl_done(cid)
             elif self.job_stat[cid] == 'skip':
-                self.ctrl_skip()
+                stat, id_data, rslt_data = self.ctrl_skip(cid)
             elif self.job_stat[cid] == 'else':
                 raise ValueError('Wrong job_stat in {}. '.format(
                     self.work_path))
             elif self.job_stat[cid] == 'no_file':
-                self.ctrl_next_struc()
+                stat, id_data = self.ctrl_next_struc(cid)
             else:
                 raise ValueError('Unexpected error in {}stat_job'.format(
                     self.work_path))
-        return self.job_stat, work_path_dic
+        # no output of stat
+        return self.job_stat, work_path_dic, rslt_data, opt_struc, id_data
 
-    def ctrl_done(self):
+    def ctrl_done(self, cid):
+        """'done' process for job number cid.
+
+        It calls ctrl_next_stage() if current_stage< nstage
+              or ctrl_collect() if current_stage==nstage.
+
+        Returns are collective variables, stat, rslt_data, opt_struc, id_data.
+
+        Args:
+            cid (int): job number.
+
+        Raises:
+            ValueError: 'internal error  cid != self.current_id'
+            ValueError: 'Wrong stage'
+
+        Returns:
+            tuples containing
+            _type_: _description_
+        """
+        if cid != self.current_id:
+            raise ValueError(f'internal error  cid != self.current_id. {cid} {self.current_id}')
         self.current_stage = self.stage_stat[self.current_id]
         # ---------- log
         print('ID {0:>6}: Stage {1} Done!'.format(
@@ -186,12 +227,23 @@ class Ctrl_job:
             self.ctrl_next_stage()
         # ---------- collect result
         elif self.current_stage == rin.nstage:
-            self.ctrl_collect()
+            rslt_data, opt_struc, id_data = self.ctrl_collect()
+            return rslt_data, opt_struc, id_data
         # ---------- error
         else:
             raise ValueError('Wrong stage in '+self.work_path+'stat_job')
 
-    def ctrl_next_stage(self):
+    def ctrl_next_stage(self, cid):
+        """next stage for job number cid.
+
+        Args:
+            cid (int): job number.
+
+        Raises:
+            ValueError: 'internal error cid != self.current_id.'
+        """
+        if cid != self.current_id:
+            raise ValueError(f'internal error cid != self.current_id. {cid} {self.current_id}')
         # ---------- energy step
         if rin.energy_step_flag:
             self.energy_step_data = select_code.get_energy_step(
@@ -218,23 +270,41 @@ class Ctrl_job:
                                                self.work_path)
         # ---------- skip
         if skip_flag:
-            self.ctrl_skip()
+            self.ctrl_skip(self.current_id)
             return
         # ---------- prepare jobfile
-        self.prepare_jobfile()
+        self.prepare_jobfile(self.current_id)
         # ---------- submit
-        self.submit_next_stage()
+        self.submit_next_stage(self.current_id)
 
-    def submit_next_stage(self):
+    def submit_next_stage(self, cid, dry_run=False):
+        """submit process for job number cid.
+
+        Returns are collective variable, stat.
+
+        Args:
+            cid (int): job number.
+            dry_run (bool, optional): dry run. Defaults to False.
+
+        Raises:
+            ValueError: 'internal error cid != self.current_id.'
+
+        Returns:
+            tuples containing
+            ConfigParser: stat
+        """
+        if cid != self.current_id:
+            raise ValueError(f'internal error cid != self.current_id. {cid} {self.current_id}')
         # ---------- submit job
         os.chdir(self.work_path)    # cd work_path
         with open('stat_job', 'w') as fwstat:
             fwstat.write('{:<6}    # Structure ID\n'.format(self.current_id))
             fwstat.write('{:<6}    # Stage\n'.format(self.current_stage + 1))
             fwstat.write('submitted\n')
-        with open('sublog', 'w') as logf:
-            subprocess.Popen([rin.jobcmd, rin.jobfile],
-                             stdout=logf, stderr=logf)
+        if not dry_run:
+            with open('sublog', 'w') as logf:
+                subprocess.Popen([rin.jobcmd, rin.jobfile],
+                                stdout=logf, stderr=logf)
         os.chdir('../../')    # go back to ..
         # ---------- save status
         io_stat.set_stage(self.stat, self.current_id, self.current_stage + 1)
@@ -242,10 +312,26 @@ class Ctrl_job:
         # ---------- log
         print('    submitted job, ID {0:>6} Stage {1}'.format(
             self.current_id, self.current_stage + 1))
-
         return self.stat
 
-    def ctrl_collect(self):
+    def ctrl_collect(self, cid):
+        """collect process for job number cid.
+
+        Returns are collective variables, stat, rslt_data, opt_struc, id_data.
+
+        Args:
+            cid (int): job number.
+
+        Raises:
+            ValueError: 'internal error cid != self.current_id.'
+            ValueError: 'Error, algo'
+
+        Returns:
+            Tuples containing
+            _type_: _description_
+        """
+        if cid != self.current_id:
+            raise ValueError(f'internal error cid != self.current_id. {cid} {self.current_id}')
         # ---------- energy step
         if rin.energy_step_flag:
             self.energy_step_data = select_code.get_energy_step(
@@ -270,22 +356,23 @@ class Ctrl_job:
         elif rin.algo == 'LAQA':
             self.ctrl_collect_laqa()
         elif rin.algo == 'EA':
-            self.ctrl_collect_ea()
+            rslt_data, opt_struc, id_data = self.ctrl_collect_ea(self.current_id)
         else:
             raise ValueError('Error, algo')
         # ---------- move to fin
         if rin.algo == 'LAQA':
             if self.fin_laqa:
-                self.mv_fin()
+                self.mv_fin(self.current_id)
             else:
                 os.rename(self.work_path+'stat_job',
                           self.work_path+'prev_stat_job')
         else:
-            self.mv_fin()
+            self.mv_fin(self.current_id)
         # ---------- update status
-        self.update_status(operation='fin')
+        id_data = self.update_status(cid, operation='fin')
         # ---------- recheck
         self.recheck = True
+        return rslt_data, opt_struc, id_data
 
     def ctrl_collect_rs(self):
         # ---------- get opt data
@@ -391,7 +478,23 @@ class Ctrl_job:
             pkl_data.save_rslt(self.rslt_data)
             out_rslt(self.rslt_data)
 
-    def ctrl_collect_ea(self):
+    def ctrl_collect_ea(self, cid):
+        """collect EA process for job number cid.
+
+        Returns are collective variables, rslt_data, opt_struc, id_data.
+
+        Args:
+            cid (int): job number
+
+        Raises:
+            ValueError: 'internal erorr, cid != self.current_id'
+
+        Returns:
+            Tuples containing,
+            _type_: _description_
+        """
+        if cid != self.current_id:
+            raise ValueError(f'internal erorr, cid != self.current_id {cid} {self.current_id}')
         # ---------- get opt data
         opt_struc, energy, magmom, check_opt = \
             select_code.collect(self.current_id, self.work_path)
@@ -409,12 +512,16 @@ class Ctrl_job:
         pkl_data.save_rslt(self.rslt_data)
         out_rslt(self.rslt_data)
         # ------ success
+        id_data = None
         if opt_struc is not None:
-            self.save_id_data()
+            id_data = self.save_id_data()
+        return self.rslt_data, opt_struc, id_data
 
     def regist_opt(self, opt_struc):
         '''
         Common part in ctrl_collect_*
+
+        最適化済構造の対称性を登録する。
         '''
         # ---------- get initial spg info
         try:
@@ -449,7 +556,18 @@ class Ctrl_job:
         # ---------- return
         return spg_sym, spg_num, spg_sym_opt, spg_num_opt
 
-    def ctrl_next_struc(self):
+    def ctrl_next_struc(self, cid):
+        """next struc process for job number cid.
+
+        Args:
+            cid (int): job number
+
+        Raises:
+            ValueError: 'internal error cid!=self.current_id,'
+            ValueError: 'Error, algo'
+        """
+        if cid != self.current_id:
+            raise ValueError(f'internal error cid!=self.current_id, {cid} {self.current_id}')
         # ---------- RS
         if rin.algo == 'RS':
             next_struc_data = self.init_struc_data[self.current_id]
@@ -473,7 +591,7 @@ class Ctrl_job:
         if next_struc_data is None:
             print('ID {:>6}: initial structure is None'.format(
                 self.current_id))
-            self.ctrl_skip()
+            stat, id_data, rslt_data = self.ctrl_skip(cid)
         # ------ normal initial structure data
         else:
             # -- prepare input files for structure optimization
@@ -485,27 +603,62 @@ class Ctrl_job:
             else:
                 select_code.next_struc(next_struc_data, self.current_id,
                                        self.work_path)
-            # -- prepare jobfile
-            self.prepare_jobfile()
-            # -- submit
-            self.submit_next_struc()
-            print('ID {:>6}: submit job, Stage 1'.format(self.current_id))
-            # -- update status
-            self.update_status(operation='submit')
+            if aiida_major_version>=1:
+                self.submit_next_struc(dry_run=True)
+                print('ID {:>6}: submit job, Stage 1'.format(self.current_id))
+            else:
+                # -- prepare jobfile
+                self.prepare_jobfile()
+                # -- submit
+                self.submit_next_struc()
+                print('ID {:>6}: submit job, Stage 1'.format(self.current_id))
+                # -- update status
+                id_data = self.update_status(cid, operation='submit')
 
-    def submit_next_struc(self):
+    def submit_next_struc(self, cid, dry_run=False):
+        """next struc process for job number cid.
+
+        Args:
+            cid (int): job numbner
+            dry_run (bool, optional): dry run flag. Defaults to False.
+
+        Raises:
+            ValueError: 'internal error cid != self.current_id.'
+        """
+        if cid != self.current_id:
+            raise ValueError(f'internal error cid != self.current_id. {cid} {self.current_id}')
         # ---------- submit job
         os.chdir(self.work_path)    # cd work_path
         with open('stat_job', 'w') as fwstat:
             fwstat.write('{:<6}    # Structure ID\n'.format(self.current_id))
             fwstat.write('{:<6}    # Stage\n'.format(1))
             fwstat.write('submitted\n')
-        with open('sublog', 'w') as logf:
-            subprocess.Popen([rin.jobcmd, rin.jobfile],
-                             stdout=logf, stderr=logf)
+        if not dry_run:
+            with open('sublog', 'w') as logf:
+                subprocess.Popen([rin.jobcmd, rin.jobfile],
+                                stdout=logf, stderr=logf)
         os.chdir('../../')    # go back to csp root dir
 
-    def ctrl_skip(self):
+    def ctrl_skip(self, cid):
+        """skip process for job number cid.
+
+        It gets symmetry information.
+
+        Returns are collective variables, stat, id_data, rslt_data.
+
+        Args:
+            cid (int): job number.
+
+        Raises:
+            ValueError: 'internal error cid != self.current_id.'
+            ValueError: ''not supported now, algo'
+
+        Returns:
+            Tuples containing,
+            _type_: _description_
+        """
+        if cid != self.current_id:
+            raise ValueError(f'internal error cid != self.current_id. {cid} {self.current_id}')
         # ---------- log and out
         with open('cryspy.out', 'a') as fout:
             fout.write('ID {:>6}: Skip\n'.format(self.current_id))
@@ -528,7 +681,7 @@ class Ctrl_job:
         magmom = np.nan
         check_opt = 'skip'
         # ---------- register opt_struc
-        self.opt_struc_data[self.current_id] = None
+        self.opt_struc_data[self.current_id] = Nones
         pkl_data.save_opt_struc(self.opt_struc_data)
         # ---------- RS
         if rin.algo == 'RS':
@@ -583,16 +736,39 @@ class Ctrl_job:
             pkl_data.save_rslt(self.rslt_data)
             out_rslt(self.rslt_data)
         # ---------- move to fin
-        self.mv_fin()
+        self.mv_fin(self.current_id)
         # ---------- update status
-        stat, id_data = self.update_status(operation='fin')
+        id_data = self.update_status(cid, operation='fin')
         # ---------- recheck
         self.recheck = True
         if aiida_major_version >= 1:
             if rin.algo == 'EA':
-                return stat, id_data, self.rslt_data
+                return id_data, self.rslt_data
+            else:
+                raise ValueError(f'not supported now, algo={rin.algo}')
 
-    def update_status(self, operation):
+    def update_status(self, cid, operation):
+        """update the status of job number cid with operation.
+
+        Returns are collective variables, stat, id_data
+
+        stat is changed, but isn't outputted because io_data outputs the same data.
+
+        Args:
+            cid (int): current_id
+            operation (str): submit or fin
+
+        Raises:
+            ValueError: 'operation is wrong'
+            ValueError: 'internal error cid != self.current_id'
+
+        Returns:
+            tupples containing
+            ConfigParser: stat
+            list: id_data
+        """
+        if cid != self.current_id:
+            raise ValueError(f'internal error cid != self.current_id. {cid} {self.current_id}')
         # ---------- update status
         if operation == 'submit':
             self.id_running.append(self.current_id)
@@ -607,13 +783,15 @@ class Ctrl_job:
         else:
             raise ValueError('operation is wrong')
         io_stat.set_id(self.stat, 'id_queueing', self.id_queueing)
-        io_stat.write_stat(self.stat)
+        io_stat.write_stat(self.stat) # only id_queue
         # ---------- save id_data
         id_data = self.save_id_data()
         if aiida_major_version >= 1:
-            return self.stat, id_data
+            return id_data
 
-    def prepare_jobfile(self):
+    def prepare_jobfile(self, cid):
+        if cid != self.current_id:
+            raise ValueError(f'internal error cid != self.current_id. {cid} {self.current_id}')
         if not os.path.isfile('./calc_in/' + rin.jobfile):
             raise IOError('Could not find ./calc_in' + rin.jobfile)
         with open('./calc_in/' + rin.jobfile, 'r') as f:
@@ -624,7 +802,9 @@ class Ctrl_job:
         with open(self.work_path + rin.jobfile, 'w') as f:
             f.writelines(lines2)
 
-    def mv_fin(self):
+    def mv_fin(self, cid):
+        if cid != self.current_id:
+            raise ValueError(f'internal error cid != self.current_id. {cid} {self.current_id}')
         if not os.path.isdir('work/fin/{0:06}'.format(self.current_id)):
             shutil.move('work/{:06}'.format(self.current_id), 'work/fin/')
         else:    # rename for recalc
@@ -646,8 +826,8 @@ class Ctrl_job:
             self.next_select_LAQA()
         if rin.algo == 'EA':
             if aiida_major_version >= 1:
-                stat, ea_id_data, ea_data, rslt_data = self.next_gen_EA(ea_data)
-                return stat, ea_id_data, ea_data, rslt_data
+                stat, ea_id_data, ea_data, rslt_data, init_struc_data = self.next_gen_EA(ea_data)
+                return stat, ea_id_data, ea_data, rslt_data, init_struc_data
             else:
                 self.next_gen_EA()
 
@@ -711,13 +891,13 @@ class Ctrl_job:
             raise SystemExit()
         # ---------- EA
         ea_id_data = (self.gen, self.id_queueing, self.id_running)
-        stat, ea_id_data, ea_data, rslt_data = ea_next_gen.next_gen(self.stat,
+        stat, ea_id_data, ea_data, rslt_data, init_struc_data = ea_next_gen.next_gen(self.stat,
                                                                     self.init_struc_data,
-                                                                    self.opt_struc_data, 
-                                                                    self.rslt_data, 
+                                                                    self.opt_struc_data,
+                                                                    self.rslt_data,
                                                                     ea_id_data,
                                                                     ea_data)
-        return stat, ea_id_data, ea_data, rslt_data
+        return stat, ea_id_data, ea_data, rslt_data, init_struc_data
 
     def save_id_data(self):
         # ---------- save id_data

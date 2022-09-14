@@ -48,7 +48,7 @@ def next_gen(stat, init_struc_data, opt_struc_data, rslt_data, ea_id_data, ea_da
 
     # ---------- generate offspring by EA
     print('# -- Generate structures')
-    _, eagen = child_gen(sp, init_struc_data)
+    init_struc_data, eagen = child_gen(sp, init_struc_data)
 
     # ---------- select elite
     if rin.n_elite > 0:
@@ -132,4 +132,4 @@ def next_gen(stat, init_struc_data, opt_struc_data, rslt_data, ea_id_data, ea_da
     io_stat.write_stat(stat)
 
     if aiida_major_version >= 1:
-        return stat, ea_id_data, ea_data, rslt_data
+        return stat, ea_id_data, ea_data, rslt_data, init_struc_data
