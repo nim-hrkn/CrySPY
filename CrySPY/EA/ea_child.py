@@ -6,12 +6,14 @@ from ..gen_struc.EA.strain import Strain
 from ..gen_struc.random.random_generation import Rnd_struc_gen
 from ..gen_struc.random.gen_pyxtal import Rnd_struc_gen_pyxtal
 from ..IO import pkl_data
-from ..IO import read_input as rin
+# from ..IO import read_input as rin
+from ..IO.rin_class import Rin
 
 from ..common import aiida_major_version
 
 
 def child_gen(sp, init_struc_data, stat):
+    rin = Rin(stat)
     if aiida_major_version>=1:
         tot_struc = int(stat["basic"]["tot_struc"])
     else:

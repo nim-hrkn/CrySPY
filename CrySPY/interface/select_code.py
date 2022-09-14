@@ -13,10 +13,12 @@ from .soiap import calc_files_soiap, ctrl_job_soiap, collect_soiap
 from .LAMMPS import calc_files_lammps, ctrl_job_lammps, collect_lammps
 from .OMX import calc_files_OMX, ctrl_job_OMX, collect_OMX
 
-from ..IO import read_input as rin
+# from ..IO import read_input as rin
+from ..IO.rin_class import Rin
 
 
-def check_calc_files():
+def check_calc_files(stat):
+    rin = Rin(stat)
     if rin.calc_code == 'VASP':
         calc_files_vasp.check_input_vasp()
     elif rin.calc_code == 'QE':
@@ -31,9 +33,10 @@ def check_calc_files():
         raise NotImplementedError('now only VASP, QE, OMX, soiap, or LAMMPS')
 
 
-def next_stage(stage, work_path, *args):
+def next_stage(stage, work_path, stat, *args):
     # args[0] <-- kpt_data
     # args[1] <-- current_id
+    rin = Rin(stat)
     if rin.calc_code == 'VASP':
         skip_flag, kpt_data = ctrl_job_vasp.next_stage_vasp(stage, work_path,
                                                             args[0], args[1])
@@ -56,7 +59,8 @@ def next_stage(stage, work_path, *args):
         raise NotImplementedError('now only VASP, QE, OMX, soiap, or LAMMPS')
 
 
-def collect(current_id, work_path):
+def collect(current_id, work_path, stat):
+    rin = Rin(stat)
     if rin.calc_code == 'VASP':
         opt_struc, energy, magmom, check_opt = \
             collect_vasp.collect_vasp(current_id, work_path)
@@ -79,7 +83,8 @@ def collect(current_id, work_path):
     return opt_struc, energy, magmom, check_opt
 
 
-def next_struc(structure, current_id, work_path, *args):
+def next_struc(structure, current_id, work_path, stat, *args):
+    rin = Rin(stat)
     # args[0] <-- kpt_data
     if rin.calc_code == 'VASP':
         kpt_data = ctrl_job_vasp.next_struc_vasp(structure, current_id,
@@ -101,7 +106,8 @@ def next_struc(structure, current_id, work_path, *args):
         raise NotImplementedError('only VASP, QE, OMX, soiap, LAMMPS for now')
 
 
-def get_energy_step(energy_step_data, current_id, work_path):
+def get_energy_step(energy_step_data, current_id, work_path, stat):
+    rin = Rin(stat)
     if rin.calc_code == 'VASP':
         energy_step_data = collect_vasp.get_energy_step_vasp(
             energy_step_data, current_id, work_path)
@@ -118,7 +124,8 @@ def get_energy_step(energy_step_data, current_id, work_path):
         raise NotImplementedError('only VASP, QE, soiap for now')
 
 
-def get_struc_step(struc_step_data, current_id, work_path):
+def get_struc_step(struc_step_data, current_id, work_path, stat):
+    rin = Rin(stat)
     if rin.calc_code == 'VASP':
         struc_step_data = collect_vasp.get_struc_step_vasp(
             struc_step_data, current_id, work_path)
@@ -135,7 +142,8 @@ def get_struc_step(struc_step_data, current_id, work_path):
         raise NotImplementedError('only VASP, QE, soiap for now')
 
 
-def get_force_step(force_step_data, current_id, work_path):
+def get_force_step(force_step_data, current_id, work_path, stat):
+    rin = Rin(stat)
     if rin.calc_code == 'VASP':
         force_step_data = collect_vasp.get_force_step_vasp(
             force_step_data, current_id, work_path)
@@ -152,7 +160,8 @@ def get_force_step(force_step_data, current_id, work_path):
         raise NotImplementedError('only VASP, QE, soiap for now')
 
 
-def get_stress_step(stress_step_data, current_id, work_path):
+def get_stress_step(stress_step_data, current_id, work_path, stat):
+    rin = Rin(stat)
     if rin.calc_code == 'VASP':
         stress_step_data = collect_vasp.get_stress_step_vasp(
             stress_step_data, current_id, work_path)

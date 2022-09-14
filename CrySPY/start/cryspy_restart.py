@@ -10,25 +10,26 @@ from ..EA import ea_append
 from ..gen_struc.random.random_generation import Rnd_struc_gen
 from ..gen_struc.random.gen_pyxtal import Rnd_struc_gen_pyxtal
 from ..IO import io_stat, pkl_data
-from ..IO import read_input as rin
+# from ..IO import read_input as rin
+from ..IO.rin_class import Rin
 from ..LAQA import laqa_restart
 from ..RS import rs_restart
 
 from ..common import aiida_major_version
 
 
-def restart(init_struc_data=None):
+def restart(init_struc_data=None, stat):
     print('\n\n')
     print(utility.get_date())
     print(utility.get_version())
     print('Restart cryspy.py\n\n')
 
     # ---------- read stat
-    stat = io_stat.stat_read()
+    stat2 = io_stat.stat_read()
 
     # ---------- read input and check the change
-    rin.readin()
-    rin.diffinstat(stat)
+    rin = Rin(stat)
+    rin.diffinstat(stat2)
 
     # ---------- load init_struc_data for appending structures
     if aiida_major_version >= 1:
@@ -75,7 +76,8 @@ def restart(init_struc_data=None):
     return stat, init_struc_data
 
 
-def append_struc(init_struc_data):
+def append_struc(init_struc_data, stat):
+    rin = Rin(stat)
     # ---------- append initial structures
     print('\n# ---------- Append structures')
     with open('cryspy.out', 'a') as fout:

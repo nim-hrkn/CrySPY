@@ -14,7 +14,8 @@ from ..BO import bo_next_select
 from ..EA import ea_next_gen
 from ..gen_struc.struc_util import out_poscar, out_cif
 from ..interface import select_code
-from ..IO import read_input as rin
+# from ..IO import read_input as rin
+from ..IO.rin_class import Rin
 from ..IO import change_input, io_stat, pkl_data
 from ..IO.out_results import out_rslt
 from ..IO.out_results import out_laqa_status, out_laqa_step, out_laqa_score
@@ -29,6 +30,8 @@ class Ctrl_job:
 
     def __init__(self, stat, init_struc_data,
                  opt_struc_data=None, rslt_data=None, ea_id=None):
+        rin = Rin(stat)
+        self.rin = rin
         self.stat = stat
         self.init_struc_data = init_struc_data
         if aiida_major_version >= 1:
@@ -92,6 +95,7 @@ class Ctrl_job:
             tuples containing,
             _type_: _description_
         """
+        rin = self.rin
         # ---------- option: recalc
         if rin.recalc:
             self.set_recalc()
@@ -135,6 +139,7 @@ class Ctrl_job:
             return self.tmp_running, self.tmp_queueing, self.job_stat, self.stage_stat
 
     def set_recalc(self):
+        rin = self.rin
         # ---------- check id
         for tid in rin.recalc:
             if tid not in self.opt_struc_data:
@@ -216,6 +221,7 @@ class Ctrl_job:
             tuples containing
             _type_: _description_
         """
+        rin = self.rin
         if cid != self.current_id:
             raise ValueError(f'internal error  cid != self.current_id. {cid} {self.current_id}')
         self.current_stage = self.stage_stat[self.current_id]
@@ -242,6 +248,7 @@ class Ctrl_job:
         Raises:
             ValueError: 'internal error cid != self.current_id.'
         """
+        rin = self.rin
         if cid != self.current_id:
             raise ValueError(f'internal error cid != self.current_id. {cid} {self.current_id}')
         # ---------- energy step
@@ -330,6 +337,7 @@ class Ctrl_job:
             Tuples containing
             _type_: _description_
         """
+        rin = self.rin
         if cid != self.current_id:
             raise ValueError(f'internal error cid != self.current_id. {cid} {self.current_id}')
         # ---------- energy step
@@ -422,6 +430,7 @@ class Ctrl_job:
         self.save_data()
 
     def ctrl_collect_laqa(self):
+        rin = self.rin
         # ---------- flag for finish
         self.fin_laqa = False
         # ---------- get opt data
@@ -523,6 +532,7 @@ class Ctrl_job:
 
         最適化済構造の対称性を登録する。
         '''
+        rin = self.rin
         # ---------- get initial spg info
         try:
             spg_sym, spg_num = self.init_struc_data[
@@ -566,6 +576,7 @@ class Ctrl_job:
             ValueError: 'internal error cid!=self.current_id,'
             ValueError: 'Error, algo'
         """
+        rin = self.rin
         if cid != self.current_id:
             raise ValueError(f'internal error cid!=self.current_id, {cid} {self.current_id}')
         # ---------- RS
@@ -625,6 +636,7 @@ class Ctrl_job:
         Raises:
             ValueError: 'internal error cid != self.current_id.'
         """
+        rin = self.rin
         if cid != self.current_id:
             raise ValueError(f'internal error cid != self.current_id. {cid} {self.current_id}')
         # ---------- submit job
@@ -657,6 +669,7 @@ class Ctrl_job:
             Tuples containing,
             _type_: _description_
         """
+        rin =self.rin
         if cid != self.current_id:
             raise ValueError(f'internal error cid != self.current_id. {cid} {self.current_id}')
         # ---------- log and out
@@ -790,6 +803,7 @@ class Ctrl_job:
             return id_data
 
     def prepare_jobfile(self, cid):
+        rin = self.rin
         if cid != self.current_id:
             raise ValueError(f'internal error cid != self.current_id. {cid} {self.current_id}')
         if not os.path.isfile('./calc_in/' + rin.jobfile):
@@ -820,6 +834,7 @@ class Ctrl_job:
         '''
         next selection or generation
         '''
+        rin = self.rin
         if rin.algo == 'BO':
             self.next_select_BO()
         if rin.algo == 'LAQA':
@@ -832,6 +847,7 @@ class Ctrl_job:
                 self.next_gen_EA()
 
     def next_select_BO(self):
+        rin = self.rin
         # ---------- log and out
         with open('cryspy.out', 'a') as fout:
             fout.write('\nDone selection {}\n\n'.format(self.n_selection))
@@ -862,6 +878,7 @@ class Ctrl_job:
                                    bo_id_data, bo_data)
 
     def next_select_LAQA(self):
+        rin = self.rin
         # ---------- check point 3
         if rin.stop_chkpt == 3:
             print('\nStop at check point 3: LAQA is ready\n')
@@ -875,6 +892,7 @@ class Ctrl_job:
         laqa_next_selection.next_selection(self.stat, laqa_id_data, laqa_data)
 
     def next_gen_EA(self, ea_data):
+        rin = self.rin
         # ---------- log and out
         with open('cryspy.out', 'a') as fout:
             fout.write('\nDone generation {}\n\n'.format(self.gen))
@@ -900,6 +918,7 @@ class Ctrl_job:
         return stat, ea_id_data, ea_data, rslt_data, init_struc_data
 
     def save_id_data(self):
+        rin = self.rin
         # ---------- save id_data
         if rin.algo == 'RS':
             rs_id_data = (self.id_queueing, self.id_running)
@@ -918,6 +937,7 @@ class Ctrl_job:
             return ea_id_data
 
     def save_data(self):
+        rin = self.rin
         # ---------- save ??_data
         if rin.algo == 'BO':
             bo_data = (self.init_dscrpt_data, self.opt_dscrpt_data,

@@ -10,12 +10,14 @@ from .ea_child import child_gen
 from ..gen_struc.EA.select_parents import Select_parents
 from ..IO import out_results
 from ..IO import change_input, io_stat, pkl_data
-from ..IO import read_input as rin
-
+# from ..IO import read_input as rin
+from ..IO.rin_class import Rin
 from ..common import aiida_major_version
 
 
 def append_struc(stat, init_struc_data, opt_struc_data, rslt_data):
+    rin = Rin(stat)
+    
     if aiida_major_version>=1:
         tot_struc = int(stat["basic"]["tot_struc"])
     else:
