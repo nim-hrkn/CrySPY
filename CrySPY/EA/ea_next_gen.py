@@ -14,8 +14,13 @@ from ..common import aiida_major_version
 
 
 def next_gen(stat, init_struc_data, opt_struc_data, rslt_data, ea_id_data, ea_data=None):
+    if aiida_major_version>=1:
+        tot_struc = int(stat["basic"]["tot_struc"])
+    else:
+        tot_struc = rin.tot_struc
     # ---------- ea_id_data
     gen, id_queueing, id_running = ea_id_data
+
 
     # ---------- out and log
     with open('cryspy.out', 'a') as fout:
@@ -48,7 +53,7 @@ def next_gen(stat, init_struc_data, opt_struc_data, rslt_data, ea_id_data, ea_da
 
     # ---------- generate offspring by EA
     print('# -- Generate structures')
-    init_struc_data, eagen = child_gen(sp, init_struc_data)
+    init_struc_data, eagen = child_gen(sp, init_struc_data, stat)
 
     # ---------- select elite
     if rin.n_elite > 0:
@@ -76,7 +81,7 @@ def next_gen(stat, init_struc_data, opt_struc_data, rslt_data, ea_id_data, ea_da
     gen += 1
 
     # ---------- id_queueing
-    id_queueing = [i for i in range(rin.tot_struc, rin.tot_struc + rin.n_pop)]
+    id_queueing = [i for i in range(tot_struc, tot_struc + rin.n_pop)]
 
     # ---------- ea_info
     tmp_info = pd.Series([gen, rin.n_pop, rin.n_crsov, rin.n_perm,
@@ -89,13 +94,13 @@ def next_gen(stat, init_struc_data, opt_struc_data, rslt_data, ea_id_data, ea_da
 
     # ---------- ea_origin
     # ------ EA operation part
-    for cid in range(rin.tot_struc, rin.tot_struc + rin.n_pop - rin.n_rand):
+    for cid in range(tot_struc, tot_struc + rin.n_pop - rin.n_rand):
         tmp_origin = pd.Series([gen, cid, eagen.operation[cid],
                                 eagen.parents[cid]], index=ea_origin.columns)
         ea_origin = ea_origin.append(tmp_origin, ignore_index=True)
     # ------ random part
-    for cid in range(rin.tot_struc + rin.n_pop - rin.n_rand,
-                     rin.tot_struc + rin.n_pop):
+    for cid in range(tot_struc + rin.n_pop - rin.n_rand,
+                     tot_struc + rin.n_pop):
         tmp_origin = pd.Series([gen, cid, 'random', None],
                                index=ea_origin.columns)
         ea_origin = ea_origin.append(tmp_origin, ignore_index=True)
@@ -118,15 +123,15 @@ def next_gen(stat, init_struc_data, opt_struc_data, rslt_data, ea_id_data, ea_da
 
     # ---------- change the value of tot_struc
     config = change_input.config_read()
-    change_input.change_basic(config, 'tot_struc', rin.tot_struc + rin.n_pop)
+    change_input.change_basic(config, 'tot_struc', tot_struc + rin.n_pop)
     change_input.write_config(config)
     print('# -- changed cryspy.in')
     print('Changed the value of tot_struc in cryspy.in'
           ' from {} to {}'.format(
-              rin.tot_struc, rin.tot_struc + rin.n_pop))
+              tot_struc, tot_struc + rin.n_pop))
 
     # ---------- status
-    io_stat.set_input_common(stat, 'basic', 'tot_struc', rin.tot_struc + rin.n_pop)
+    io_stat.set_input_common(stat, 'basic', 'tot_struc', tot_struc + rin.n_pop)
     io_stat.set_common(stat, 'generation', gen)
     io_stat.set_id(stat, 'id_queueing', id_queueing)
     io_stat.write_stat(stat)

@@ -16,6 +16,10 @@ from ..common import aiida_major_version
 
 
 def append_struc(stat, init_struc_data, opt_struc_data, rslt_data):
+    if aiida_major_version>=1:
+        tot_struc = int(stat["basic"]["tot_struc"])
+    else:
+        tot_struc = rin.tot_struc
     # ---------- append structures by EA
     print('\n# ---------- Append structures by EA')
     with open('cryspy.out', 'a') as fout:
@@ -64,7 +68,7 @@ def append_struc(stat, init_struc_data, opt_struc_data, rslt_data):
                                           'Operation', 'Parent'])
         ea_origin.iloc[:, 0:2] = ea_origin.iloc[:, 0:2].astype(int)
     # ------ register ea_info
-    tmp_info = pd.Series([rin.tot_struc, rin.n_pop, rin.n_crsov,
+    tmp_info = pd.Series([tot_struc, rin.n_pop, rin.n_crsov,
                           rin.n_perm, rin.n_strain, rin.n_rand, 0,
                           rin.crs_lat, rin.slct_func],
                          index=ea_info.columns)
@@ -74,14 +78,14 @@ def append_struc(stat, init_struc_data, opt_struc_data, rslt_data):
 
     # ---------- ea_origin
     # ------ EA operation part
-    for cid in range(rin.tot_struc, rin.tot_struc + rin.n_pop - rin.n_rand):
-        tmp_origin = pd.Series([rin.tot_struc, cid, eagen.operation[cid],
+    for cid in range(tot_struc, tot_struc + rin.n_pop - rin.n_rand):
+        tmp_origin = pd.Series([tot_struc, cid, eagen.operation[cid],
                                 eagen.parents[cid]], index=ea_origin.columns)
         ea_origin = ea_origin.append(tmp_origin, ignore_index=True)
     # ------ random part
-    for cid in range(rin.tot_struc + rin.n_pop - rin.n_rand,
-                     rin.tot_struc + rin.n_pop):
-        tmp_origin = pd.Series([rin.tot_struc, cid, 'random', None],
+    for cid in range(tot_struc + rin.n_pop - rin.n_rand,
+                     tot_struc + rin.n_pop):
+        tmp_origin = pd.Series([tot_struc, cid, 'random', None],
                                index=ea_origin.columns)
         ea_origin = ea_origin.append(tmp_origin, ignore_index=True)
     # ------  out ea_origin
@@ -95,10 +99,10 @@ def append_struc(stat, init_struc_data, opt_struc_data, rslt_data):
     config = change_input.config_read()
     print('# -- Changed cryspy.in')
     # ------ tot_struc
-    change_input.change_basic(config, 'tot_struc', rin.tot_struc + rin.n_pop)
+    change_input.change_basic(config, 'tot_struc', tot_struc + rin.n_pop)
     print('Changed tot_struc in cryspy.in from {} to {}'.format(
-          rin.tot_struc, rin.tot_struc + rin.n_pop))
-    rin.tot_struc = rin.tot_struc + rin.n_pop
+          tot_struc, tot_struc + rin.n_pop))
+    tot_struc = tot_struc + rin.n_pop
     # ------ append_struc_ea: True --> False
     change_input.change_option(config, 'append_struc_ea', False)
     print('Changed append_struc_ea in cryspy.in from {} to {}'.format(
@@ -107,7 +111,7 @@ def append_struc(stat, init_struc_data, opt_struc_data, rslt_data):
     change_input.write_config(config)
 
     # ---------- status
-    io_stat.set_input_common(stat, 'basic', 'tot_struc', rin.tot_struc)
+    io_stat.set_input_common(stat, 'basic', 'tot_struc', tot_struc)
     io_stat.set_input_common(stat, 'option', 'append_struc_ea', False)
     io_stat.write_stat(stat)
 

@@ -8,10 +8,16 @@ from ..gen_struc.random.gen_pyxtal import Rnd_struc_gen_pyxtal
 from ..IO import pkl_data
 from ..IO import read_input as rin
 
+from ..common import aiida_major_version
 
-def child_gen(sp, init_struc_data):
+
+def child_gen(sp, init_struc_data, stat):
+    if aiida_major_version>=1:
+        tot_struc = int(stat["basic"]["tot_struc"])
+    else:
+        tot_struc = rin.tot_struc
     # ---------- instantiate EA_generation class
-    eagen = EA_generation(sp=sp, symprec=rin.symprec, id_start=rin.tot_struc,
+    eagen = EA_generation(sp=sp, symprec=rin.symprec, id_start=tot_struc,
                           init_pos_path='./data/init_POSCARS')
 
     # ------ instantiate Crossover class
