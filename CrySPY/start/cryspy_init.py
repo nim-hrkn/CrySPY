@@ -130,13 +130,17 @@ def initialize(cryspy_in='cryspy.in', init_struc_data=None):
 
     # ---------- initialize for each algorithm
     if rin.algo == 'RS':
-        rs_init.initialize(stat)
+        stat, rs_id_data = rs_init.initialize(cryspy_in, stat)
+        id_data = rs_id_data
+        detail_data = None
     elif rin.algo == 'BO':
         bo_init.initialize(stat, init_struc_data, rslt_data)
     elif rin.algo == 'LAQA':
         laqa_init.initialize(stat)
     elif rin.algo == "EA":
         stat, ea_id_data, ea_data, rslt_data = ea_init.initialize(cryspy_in, stat, rslt_data)
+        id_data = ea_id_data
+        detail_data = ea_data
 
     if aiida_major_version==0:
         # ---------- initialize etc
@@ -156,4 +160,4 @@ def initialize(cryspy_in='cryspy.in', init_struc_data=None):
             stress_step_data = {}
             pkl_data.save_stress_step(stress_step_data)
 
-    return init_struc_data, opt_struc_data, stat, rslt_data, ea_id_data, ea_data
+    return init_struc_data, opt_struc_data, stat, rslt_data, id_data, detail_data
