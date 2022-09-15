@@ -8,10 +8,18 @@ import numpy as np
 
 from ..BO.combo_cryspy import Policy_cryspy
 from ..IO import io_stat, out_results, pkl_data
-from ..IO import read_input as rin
+# from ..IO import read_input as rin
+from ..IO.rin_class import Rin
 
 
-def next_select(stat, rslt_data, bo_id_data, bo_data):
+def next_select(cryspy_in, stat, rslt_data, bo_id_data, bo_data):
+    """
+
+    The content of crspy_in will be changed during this function.
+    config.set('BO', 'manual_select_bo', '')
+
+    """
+    rin = Rin(cryspy_in)
     # ---------- out and log
     with open('cryspy.out', 'a') as fout:
         fout.write('# ------ Bayesian optimization\n')
@@ -43,9 +51,9 @@ def next_select(stat, rslt_data, bo_id_data, bo_data):
         id_queueing = rin.manual_select_bo
         # ------ delete the value for manual_select_bo in cryspy.in
         config = configparser.ConfigParser()
-        config.read('cryspy.in')
+        config.read(cryspy_in)
         config.set('BO', 'manual_select_bo', '')
-        with open('cryspy.in', 'w') as f:
+        with open(cryspy_in, 'w') as f:
             config.write(f)
     else:
         nselect = rin.nselect_bo
@@ -54,6 +62,8 @@ def next_select(stat, rslt_data, bo_id_data, bo_data):
         nselect = len(init_dscrpt_data) - len(opt_dscrpt_data)
 
     # ---------- selection
+    print("bo_id_data", bo_id_data)
+    print("opt_dscrpt_data", opt_dscrpt_data.keys())
     if 0 < nselect:
         # ------ descriptors
         descriptors = []
@@ -61,7 +71,9 @@ def next_select(stat, rslt_data, bo_id_data, bo_data):
         done_id = []    # finished and non_error
         non_error_id = [i for i in range(len(init_dscrpt_data))]
         for i in range(len(init_dscrpt_data)):
+
             if i in opt_dscrpt_data:
+
                 # -- already done
                 if opt_dscrpt_data[i] is None:    # find error
                     non_error_id.remove(i)
@@ -95,8 +107,12 @@ def next_select(stat, rslt_data, bo_id_data, bo_data):
         descriptors = np.array(descriptors)
         targets = np.array(targets, dtype=float)
         # ------ Bayesian optimization
-        actions, cryspy_mean, cryspy_var, cryspy_score = bayes_opt(
-            s_act, descriptors, targets, nselect)
+        print('s_act', s_act)
+        print("descriptors", descriptors)
+        print("targetrs", targets)
+        print("nselect", nselect)
+        actions, cryspy_mean, cryspy_var, cryspy_score = bayes_opt(rin,
+                                                                   s_act, descriptors, targets, nselect)
         # ------ actions --> id_queueing
         for i in actions:
             id_queueing.append(non_error_id[i])
@@ -142,8 +158,10 @@ def next_select(stat, rslt_data, bo_id_data, bo_data):
         fout.write('selected_id: {}\n\n'.format(
             ' '.join(str(a) for a in id_queueing)))
 
+    return stat, bo_id_data, bo_data, rslt_data
 
-def bayes_opt(s_act, descriptors, targets, nselect):
+
+def bayes_opt(rin, s_act, descriptors, targets, nselect):
     # ---------- start COMBO part
     # ------ standardization
     # X = combo.misc.centering(descriptors)

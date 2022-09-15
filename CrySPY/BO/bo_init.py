@@ -9,10 +9,12 @@ import pandas as pd
 
 from .select_descriptor import select_descriptor
 from ..IO import io_stat, pkl_data
-from ..IO import read_input as rin
+# from ..IO import read_input as rin
+from ..IO.rin_class import Rin
 
 
-def initialize(stat, init_struc_data, rslt_data):
+def initialize(cryspy_in, stat, init_struc_data, rslt_data):
+    rin = Rin(cryspy_in)
     # ---------- log
     print('\n# ---------- Selection: 1')
     with open('cryspy.out', 'a') as fout:
@@ -64,7 +66,7 @@ def initialize(stat, init_struc_data, rslt_data):
     id_select_hist.append(id_queueing[:])    # append shallow copy
 
     # ---------- calc descriptor
-    init_dscrpt_data = select_descriptor(init_struc_data)
+    init_dscrpt_data = select_descriptor(cryspy_in, init_struc_data)
     opt_dscrpt_data = {}  # initialize in dict
 
     # ---------- save for BO
@@ -84,3 +86,5 @@ def initialize(stat, init_struc_data, rslt_data):
     with open('cryspy.out', 'a') as fout:
         fout.write('selected_id: {}\n\n'.format(
             ' '.join(str(a) for a in id_queueing)))
+
+    return stat, bo_id_data, bo_data, rslt_data

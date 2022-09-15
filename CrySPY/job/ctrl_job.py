@@ -29,7 +29,7 @@ from ..common import aiida_major_version
 class Ctrl_job:
 
     def __init__(self, cryspy_in, stat, init_struc_data,
-                 opt_struc_data=None, rslt_data=None, ea_id=None):
+                 opt_struc_data=None, rslt_data=None, id_data=None, detail_data=None):
         self.cryspy_in = cryspy_in
         rin = Rin(cryspy_in)
         self.rin = rin
@@ -51,11 +51,18 @@ class Ctrl_job:
         if rin.algo == 'RS':
             self.id_queueing, self.id_running = pkl_data.load_rs_id()
         elif rin.algo == 'BO':
-            (self.n_selection, self.id_queueing,
-             self.id_running, self.id_select_hist) = pkl_data.load_bo_id()
-            (self.init_dscrpt_data, self.opt_dscrpt_data,
-             self.bo_mean, self.bo_var,
-             self.bo_score) = pkl_data.load_bo_data()
+            if aiida_major_version >= 1:
+                (self.n_selection, self.id_queueing,
+                 self.id_running, self.id_select_hist) = id_data
+                (self.init_dscrpt_data, self.opt_dscrpt_data,
+                 self.bo_mean, self.bo_var,
+                 self.bo_score) = detail_data
+            else:
+                (self.n_selection, self.id_queueing,
+                 self.id_running, self.id_select_hist) = pkl_data.load_bo_id()
+                (self.init_dscrpt_data, self.opt_dscrpt_data,
+                 self.bo_mean, self.bo_var,
+                 self.bo_score) = pkl_data.load_bo_data()
         elif rin.algo == 'LAQA':
             (self.id_queueing, self.id_running,
              self.id_select_hist) = pkl_data.load_laqa_id()
@@ -64,9 +71,10 @@ class Ctrl_job:
              self.laqa_bias, self.laqa_score) = pkl_data.load_laqa_data()
         elif rin.algo == 'EA':
             if aiida_major_version >= 1:
-                if ea_id is None:
+                if id_data is None:
                     raise ValueError('ea_is must not be None.')
-                (self.gen, self.id_queueing, self.id_running) = ea_id
+                (self.gen, self.id_queueing, self.id_running) = id_data
+                self.ea_data = detail_data  # no indivisual names.
             else:
                 (self.gen, self.id_queueing,
                  self.id_running) = pkl_data.load_ea_id()
@@ -420,7 +428,7 @@ class Ctrl_job:
         # ---------- success
         if opt_struc is not None:
             # ------ calc descriptor for opt sturcture
-            tmp_dscrpt = select_descriptor({self.current_id: opt_struc})
+            tmp_dscrpt = select_descriptor(self.rin, {self.current_id: opt_struc})
             # ------ update descriptors
             self.opt_dscrpt_data.update(tmp_dscrpt)
         # ---------- error
@@ -695,7 +703,7 @@ class Ctrl_job:
         magmom = np.nan
         check_opt = 'skip'
         # ---------- register opt_struc
-        self.opt_struc_data[self.current_id] = Nones
+        self.opt_struc_data[self.current_id] = None
         pkl_data.save_opt_struc(self.opt_struc_data)
         # ---------- RS
         if rin.algo == 'RS':
@@ -831,18 +839,20 @@ class Ctrl_job:
                                     self.current_id, i))
                     break
 
-    def next_sg(self, ea_data=None):
+    def next_sg(self):
         '''
         next selection or generation
         '''
         rin = self.rin
         if rin.algo == 'BO':
-            self.next_select_BO()
+            stat, bo_id_data, bo_data, rslt_data = self.next_select_BO()
+            return stat, bo_id_data, bo_data, rslt_data, None
         if rin.algo == 'LAQA':
             self.next_select_LAQA()
         if rin.algo == 'EA':
             if aiida_major_version >= 1:
-                stat, ea_id_data, ea_data, rslt_data, init_struc_data = self.next_gen_EA(ea_data)
+
+                stat, ea_id_data, ea_data, rslt_data, init_struc_data = self.next_gen_EA()
                 return stat, ea_id_data, ea_data, rslt_data, init_struc_data
             else:
                 self.next_gen_EA()
@@ -875,8 +885,9 @@ class Ctrl_job:
                    self.bo_mean, self.bo_var, self.bo_score)
         bo_id_data = (self.n_selection, self.id_queueing,
                       self.id_running, self.id_select_hist)
-        bo_next_select.next_select(self.stat, self.rslt_data,
-                                   bo_id_data, bo_data)
+        stat, bo_id_data, bo_data, rslt_data = bo_next_select.next_select(self.cryspy_in, self.stat, self.rslt_data,
+                                                                          bo_id_data, bo_data)
+        return stat, bo_id_data, bo_data, rslt_data
 
     def next_select_LAQA(self):
         rin = self.rin
@@ -892,7 +903,7 @@ class Ctrl_job:
                      self.laqa_energy, self.laqa_bias, self.laqa_score)
         laqa_next_selection.next_selection(self.stat, laqa_id_data, laqa_data)
 
-    def next_gen_EA(self, ea_data):
+    def next_gen_EA(self):
         rin = self.rin
         # ---------- log and out
         with open('cryspy.out', 'a') as fout:
@@ -910,6 +921,7 @@ class Ctrl_job:
             raise SystemExit()
         # ---------- EA
         ea_id_data = (self.gen, self.id_queueing, self.id_running)
+        ea_data = self.ea_data
         stat, ea_id_data, ea_data, rslt_data, init_struc_data = ea_next_gen.next_gen(self.cryspy_in,
                                                                                      self.stat,
                                                                                      self.init_struc_data,

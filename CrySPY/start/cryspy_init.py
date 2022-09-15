@@ -134,7 +134,9 @@ def initialize(cryspy_in='cryspy.in', init_struc_data=None):
         id_data = rs_id_data
         detail_data = None
     elif rin.algo == 'BO':
-        bo_init.initialize(stat, init_struc_data, rslt_data)
+        stat, bo_id_data, bo_data, rslt_data = bo_init.initialize(cryspy_in, stat, init_struc_data, rslt_data)
+        id_data = bo_id_data
+        detail_data = bo_data
     elif rin.algo == 'LAQA':
         laqa_init.initialize(stat)
     elif rin.algo == "EA":
