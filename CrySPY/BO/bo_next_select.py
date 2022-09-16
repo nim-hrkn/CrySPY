@@ -63,8 +63,7 @@ def next_select(rin, stat, rslt_data, bo_id_data, bo_data):
         nselect = len(init_dscrpt_data) - len(opt_dscrpt_data)
 
     # ---------- selection
-    print("bo_id_data", bo_id_data)
-    print("opt_dscrpt_data", opt_dscrpt_data.keys())
+
     if 0 < nselect:
         # ------ descriptors
         descriptors = []
@@ -108,10 +107,7 @@ def next_select(rin, stat, rslt_data, bo_id_data, bo_data):
         descriptors = np.array(descriptors)
         targets = np.array(targets, dtype=float)
         # ------ Bayesian optimization
-        print('s_act', s_act)
-        print("descriptors", descriptors)
-        print("targetrs", targets)
-        print("nselect", nselect)
+
         actions, cryspy_mean, cryspy_var, cryspy_score = bayes_opt(rin,
                                                                    s_act, descriptors, targets, nselect)
         # ------ actions --> id_queueing

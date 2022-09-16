@@ -120,5 +120,5 @@ def append_struc(rin, stat, init_struc_data, opt_struc_data, rslt_data):
     io_stat.write_stat(stat)
 
     # ---------- return
-    return init_struc_data, rin, stat, ea_data
+    return rin, stat, init_struc_data, ea_data
 

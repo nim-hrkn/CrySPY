@@ -19,9 +19,10 @@ from ..LAQA import laqa_init
 from ..RS import rs_init
 
 from ..common import aiida_major_version
+import io
+from typing import Union
 
-
-def initialize(cryspy_in='cryspy.in', init_struc_data=None):
+def initialize(cryspy_in: Union[str, io.StringIO], init_struc_data=None):
     # ---------- start
     print(utility.get_date())
     print(utility.get_version())
@@ -36,8 +37,10 @@ def initialize(cryspy_in='cryspy.in', init_struc_data=None):
         print(f'Read input file, {cryspy_in}')
         rin = Rin()
         rin.readin(cryspy_in)          # read input data, cryspy,in
-    elif isinstance(cryspy_in, ConfigParser):
-        rin = cryspy_in
+    elif isinstance(cryspy_in, io.StringIO):
+        print('Read input file from io.StringIO')
+        rin = Rin()
+        rin.readin(cryspy_in)
     else:
         raise TypeError('unknown type for cryspy_in. type={type(cryspy_in)}')
 

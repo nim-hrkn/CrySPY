@@ -26,13 +26,13 @@ from ..LAQA import laqa_next_selection
 from ..common import aiida_major_version
 
 from typing import Union
+import io
 
 
 class Ctrl_job:
-
-    def __init__(self, cryspy_in: Union[str, Rin], stat, init_struc_data,
+    def __init__(self, cryspy_in: Union[Rin, io.StringIO], stat, init_struc_data,
                  opt_struc_data=None, rslt_data=None, id_data=None, detail_data=None):
-        if isinstance(cryspy_in, str):
+        if isinstance(cryspy_in, io.StringIO):
             rin = Rin(cryspy_in)
         elif isinstance(cryspy_in, Rin):
             rin = cryspy_in
@@ -151,8 +151,8 @@ class Ctrl_job:
             except IOError:
                 self.stage_stat[cid] = 'no_file'
                 self.job_stat[cid] = 'no_file'
-        if aiida_major_version >= 1:
-            return self.tmp_running, self.tmp_queueing, self.job_stat, self.stage_stat
+
+        return self.tmp_running, self.tmp_queueing, self.job_stat, self.stage_stat
 
     def set_recalc(self):
         rin = self.rin
@@ -851,14 +851,15 @@ class Ctrl_job:
         next selection or generation
         '''
         rin = self.rin
+        init_struc_data = None
         if rin.algo == 'BO':
             rin, stat, bo_id_data, bo_data, rslt_data = self.next_select_BO()
-            return rin, stat, bo_id_data, bo_data, rslt_data, None
+            return rin, stat, init_struc_data, bo_id_data, bo_data, rslt_data
         if rin.algo == 'LAQA':
             self.next_select_LAQA()
         if rin.algo == 'EA':
-            rin, stat, ea_id_data, ea_data, rslt_data, init_struc_data = self.next_gen_EA()
-            return rin, stat, ea_id_data, ea_data, rslt_data, init_struc_data
+            rin, stat, init_struc_data, ea_id_data, ea_data, rslt_data = self.next_gen_EA()
+            return rin, stat, init_struc_data, ea_id_data, ea_data, rslt_data
 
     def next_select_BO(self):
         rin = self.rin
@@ -925,14 +926,14 @@ class Ctrl_job:
         # ---------- EA
         ea_id_data = (self.gen, self.id_queueing, self.id_running)
         ea_data = self.ea_data
-        rin, stat, ea_id_data, ea_data, rslt_data, init_struc_data = ea_next_gen.next_gen(rin,
-                                                                                     self.stat,
-                                                                                     self.init_struc_data,
-                                                                                     self.opt_struc_data,
-                                                                                     self.rslt_data,
-                                                                                     ea_id_data,
-                                                                                     ea_data)
-        return rin, stat, ea_id_data, ea_data, rslt_data, init_struc_data
+        rin, stat, init_struc_data, ea_id_data, ea_data, rslt_data = ea_next_gen.next_gen(rin,
+                                                                                          self.stat,
+                                                                                          self.init_struc_data,
+                                                                                          self.opt_struc_data,
+                                                                                          self.rslt_data,
+                                                                                          ea_id_data,
+                                                                                          ea_data)
+        return rin, stat, init_struc_data, ea_id_data, ea_data, rslt_data
 
     def save_id_data(self):
         rin = self.rin

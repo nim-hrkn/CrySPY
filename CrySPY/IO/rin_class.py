@@ -4,8 +4,11 @@ Read input from cryspy.in
 
 import configparser
 import os
+import io
 
 from . import io_stat
+
+from typing import Union
 
 
 class Rin:
@@ -15,7 +18,7 @@ class Rin:
         else:
             self.readin(cryspy_in)
 
-    def readin(self, cryspy_in='cryspy.in'):
+    def readin(self, cryspy_in: Union[str, configparser.ConfigParser, io.StringIO]):
         """
         Args:
             cryspy_in (configparser.ConfigParser|str): 'crypy.in' or its configparser instance.
@@ -27,9 +30,16 @@ class Rin:
             # ---------- read cryspy.in
             if not os.path.isfile(cryspy_in):
                 raise IOError(f'Could not find {cryspy_in} file')
-            config = configparser.ConfigParser(allow_no_value =False )
+            config = configparser.ConfigParser(allow_no_value =False)
             config.read(cryspy_in)
             print(f"called config.read {cryspy_in}")
+        elif isinstance(cryspy_in, io.StringIO):
+            config = configparser.ConfigParser(allow_no_value =False)
+            content = cryspy_in.read()
+            config.read_string(content)
+            print("config is read from io.StringIO")
+        else:
+            raise TypeError(f'unknown type of cryspy_in. type={type(cryspy_in)}')
 
         algo = None
         calc_code = None

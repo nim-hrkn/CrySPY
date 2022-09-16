@@ -135,4 +135,4 @@ def next_gen(rin, stat, init_struc_data, opt_struc_data, rslt_data, ea_id_data, 
     io_stat.set_id(stat, 'id_queueing', id_queueing)
     io_stat.write_stat(stat)
 
-    return rin, stat, ea_id_data, ea_data, rslt_data, init_struc_data
+    return rin, stat, init_struc_data, ea_id_data, ea_data, rslt_data
