@@ -4,11 +4,8 @@ I/O for cryspy.stat
 import configparser
 
 # from . import read_input as rin
-from ..IO.rin_class import Rin
 
-
-def stat_init(cryspy_in='cryspy.in'):
-    rin = Rin(cryspy_in)
+def stat_init(rin):
     stat = configparser.ConfigParser()
     stat.add_section('basic')
     stat.add_section('structure')

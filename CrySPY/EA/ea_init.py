@@ -7,12 +7,10 @@ import pandas as pd
 from ..IO import out_results
 from ..IO import io_stat, pkl_data
 # from ..IO import read_input as rin
-from ..IO.rin_class import Rin
 from ..common import aiida_major_version
 
 
-def initialize(cryspy_in, stat, rslt_data):
-    rin = Rin(cryspy_in)
+def initialize(rin, stat, rslt_data):
     tot_struc = int(stat["basic"]["tot_struc"])
     # ---------- log
     print('\n# ---------- Initialize evolutionary algorithm')

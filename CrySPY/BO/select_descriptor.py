@@ -6,10 +6,8 @@ Select descriptors
 from .. import utility
 from ..calc_dscrpt.FP.calc_FP import Calc_FP
 #from ..IO import read_input as rin
-from ..IO.rin_class import Rin
 
-def select_descriptor(cryspy_in, struc_data):
-    rin = Rin(cryspy_in)
+def select_descriptor(rin, struc_data):
     # ---------- fingerprint
     if rin.dscrpt == 'FP':
         print('Calculate descriptors: FingerPrint')

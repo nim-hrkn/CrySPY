@@ -4,11 +4,9 @@ Initialize random search
 
 from ..IO import io_stat, pkl_data
 # from ..IO import read_input as rin
-from ..IO.rin_class import Rin
 
 
-def initialize(cryspy_in, stat):
-    rin = Rin(cryspy_in)
+def initialize(rin, stat):
     # ---------- initialize
     id_queueing = [i for i in range(rin.tot_struc)]
     id_running = []

@@ -11,12 +11,11 @@ from ..gen_struc.EA.select_parents import Select_parents
 from ..IO import out_results
 from ..IO import change_input, io_stat, pkl_data
 # from ..IO import read_input as rin
-from ..IO.rin_class import Rin
+# from ..IO.rin_class import Rin
 from ..common import aiida_major_version
 
 
-def append_struc(stat, init_struc_data, opt_struc_data, rslt_data):
-    rin = Rin(stat)
+def append_struc(rin, stat, init_struc_data, opt_struc_data, rslt_data):
     
     if aiida_major_version>=1:
         tot_struc = int(stat["basic"]["tot_struc"])
@@ -102,15 +101,18 @@ def append_struc(stat, init_struc_data, opt_struc_data, rslt_data):
     print('# -- Changed cryspy.in')
     # ------ tot_struc
     change_input.change_basic(config, 'tot_struc', tot_struc + rin.n_pop)
+    rin.tot_struc = tot_struc + rin.n_pop
     print('Changed tot_struc in cryspy.in from {} to {}'.format(
           tot_struc, tot_struc + rin.n_pop))
     tot_struc = tot_struc + rin.n_pop
     # ------ append_struc_ea: True --> False
     change_input.change_option(config, 'append_struc_ea', False)
+    change_input.change_option(rin, 'append_struc_ea', False)
     print('Changed append_struc_ea in cryspy.in from {} to {}'.format(
           True, False))
     # ------ write
-    change_input.write_config(config)
+    # change_input.write_config(config)
+    
 
     # ---------- status
     io_stat.set_input_common(stat, 'basic', 'tot_struc', tot_struc)
@@ -118,7 +120,5 @@ def append_struc(stat, init_struc_data, opt_struc_data, rslt_data):
     io_stat.write_stat(stat)
 
     # ---------- return
-    if aiida_major_version>=1:
-        return init_struc_data, stat, ea_data
-    else:
-        return init_struc_data
+    return init_struc_data, rin, stat, ea_data
+

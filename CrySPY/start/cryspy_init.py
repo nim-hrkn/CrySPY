@@ -2,6 +2,7 @@
 Initialize CrySPY
 '''
 
+from configparser import ConfigParser
 import os
 
 import pandas as pd
@@ -19,6 +20,7 @@ from ..RS import rs_init
 
 from ..common import aiida_major_version
 
+
 def initialize(cryspy_in='cryspy.in', init_struc_data=None):
     # ---------- start
     print(utility.get_date())
@@ -30,10 +32,16 @@ def initialize(cryspy_in='cryspy.in', init_struc_data=None):
         fout.write('Start cryspy.py\n\n')
 
     # ---------- read input
-    print(f'Read input file, {cryspy_in}')
-    rin = Rin()
-    rin.readin(cryspy_in)          # read input data, cryspy,in
-    stat = io_stat.stat_init(cryspy_in)    # initialize stat
+    if isinstance(cryspy_in, str):
+        print(f'Read input file, {cryspy_in}')
+        rin = Rin()
+        rin.readin(cryspy_in)          # read input data, cryspy,in
+    elif isinstance(cryspy_in, ConfigParser):
+        rin = cryspy_in
+    else:
+        raise TypeError('unknown type for cryspy_in. type={type(cryspy_in)}')
+
+    stat = io_stat.stat_init(rin)    # initialize stat
     rin.writeout()        # write input data in output file, cryspy.out
     rin.save_stat(stat)   # save input variables in cryspy.stat
 
@@ -94,7 +102,7 @@ def initialize(cryspy_in='cryspy.in', init_struc_data=None):
             fout.write('Generated structures up to ID {}\n\n'.format(
                 len(init_struc_data)-1))
         # ------ save
-        if aiida_major_version ==0:
+        if aiida_major_version == 0:
             pkl_data.save_init_struc(init_struc_data)
     else:
         # ------ load initial structure
@@ -116,7 +124,7 @@ def initialize(cryspy_in='cryspy.in', init_struc_data=None):
 
     # ---------- initialize opt_struc_data
     opt_struc_data = {}
-    if aiida_major_version==0:    
+    if aiida_major_version == 0:
         pkl_data.save_opt_struc(opt_struc_data)
 
     # ---------- initialize rslt_data
@@ -124,27 +132,27 @@ def initialize(cryspy_in='cryspy.in', init_struc_data=None):
                                       'Spg_num_opt', 'Spg_sym_opt',
                                       'E_eV_atom', 'Magmom', 'Opt'])
     rslt_data[['Spg_num', 'Spg_num_opt']] = rslt_data[
-                                   ['Spg_num', 'Spg_num_opt']].astype(int)
-    if aiida_major_version==0:                            
+        ['Spg_num', 'Spg_num_opt']].astype(int)
+    if aiida_major_version == 0:
         pkl_data.save_rslt(rslt_data)
 
     # ---------- initialize for each algorithm
     if rin.algo == 'RS':
-        stat, rs_id_data = rs_init.initialize(cryspy_in, stat)
+        stat, rs_id_data = rs_init.initialize(rin, stat)
         id_data = rs_id_data
         detail_data = None
     elif rin.algo == 'BO':
-        stat, bo_id_data, bo_data, rslt_data = bo_init.initialize(cryspy_in, stat, init_struc_data, rslt_data)
+        stat, bo_id_data, bo_data, rslt_data = bo_init.initialize(rin, stat, init_struc_data, rslt_data)
         id_data = bo_id_data
         detail_data = bo_data
     elif rin.algo == 'LAQA':
         laqa_init.initialize(stat)
     elif rin.algo == "EA":
-        stat, ea_id_data, ea_data, rslt_data = ea_init.initialize(cryspy_in, stat, rslt_data)
+        stat, ea_id_data, ea_data, rslt_data = ea_init.initialize(rin, stat, rslt_data)
         id_data = ea_id_data
         detail_data = ea_data
 
-    if aiida_major_version==0:
+    if aiida_major_version == 0:
         # ---------- initialize etc
         if rin.kpt_flag:
             kpt_data = {}
@@ -162,4 +170,4 @@ def initialize(cryspy_in='cryspy.in', init_struc_data=None):
             stress_step_data = {}
             pkl_data.save_stress_step(stress_step_data)
 
-    return init_struc_data, opt_struc_data, stat, rslt_data, id_data, detail_data
+    return init_struc_data, opt_struc_data, rin, stat, rslt_data, id_data, detail_data

@@ -25,13 +25,20 @@ from ..LAQA import laqa_next_selection
 
 from ..common import aiida_major_version
 
+from typing import Union
+
 
 class Ctrl_job:
 
-    def __init__(self, cryspy_in, stat, init_struc_data,
+    def __init__(self, cryspy_in: Union[str, Rin], stat, init_struc_data,
                  opt_struc_data=None, rslt_data=None, id_data=None, detail_data=None):
-        self.cryspy_in = cryspy_in
-        rin = Rin(cryspy_in)
+        if isinstance(cryspy_in, str):
+            rin = Rin(cryspy_in)
+        elif isinstance(cryspy_in, Rin):
+            rin = cryspy_in
+        else:
+            raise TypeError(f'type of cryspy_in must be str|Rin, type={type(cryspy_in)}')
+
         self.rin = rin
         self.stat = stat
         self.init_struc_data = init_struc_data
@@ -169,12 +176,12 @@ class Ctrl_job:
         rin.recalc = []
         config = change_input.config_read()
         change_input.change_option(config, 'recalc', '')    # clear
+        change_input.change_option(rin, 'recalc', '')
         change_input.write_config(config)
         print('Clear recalc in cryspy.in')
         io_stat.set_input_common(self.stat, 'option', 'recalc', '')
         io_stat.write_stat(self.stat)
-        if aiida_major_version >= 1:
-            return self.stat, ea_id_data
+        return rin, self.stat, ea_id_data
 
     def handle_job(self):
         """change job status for all the jobs
@@ -845,17 +852,13 @@ class Ctrl_job:
         '''
         rin = self.rin
         if rin.algo == 'BO':
-            stat, bo_id_data, bo_data, rslt_data = self.next_select_BO()
-            return stat, bo_id_data, bo_data, rslt_data, None
+            rin, stat, bo_id_data, bo_data, rslt_data = self.next_select_BO()
+            return rin, stat, bo_id_data, bo_data, rslt_data, None
         if rin.algo == 'LAQA':
             self.next_select_LAQA()
         if rin.algo == 'EA':
-            if aiida_major_version >= 1:
-
-                stat, ea_id_data, ea_data, rslt_data, init_struc_data = self.next_gen_EA()
-                return stat, ea_id_data, ea_data, rslt_data, init_struc_data
-            else:
-                self.next_gen_EA()
+            rin, stat, ea_id_data, ea_data, rslt_data, init_struc_data = self.next_gen_EA()
+            return rin, stat, ea_id_data, ea_data, rslt_data, init_struc_data
 
     def next_select_BO(self):
         rin = self.rin
@@ -885,9 +888,9 @@ class Ctrl_job:
                    self.bo_mean, self.bo_var, self.bo_score)
         bo_id_data = (self.n_selection, self.id_queueing,
                       self.id_running, self.id_select_hist)
-        stat, bo_id_data, bo_data, rslt_data = bo_next_select.next_select(self.cryspy_in, self.stat, self.rslt_data,
-                                                                          bo_id_data, bo_data)
-        return stat, bo_id_data, bo_data, rslt_data
+        rin, stat, bo_id_data, bo_data, rslt_data = bo_next_select.next_select(rin, self.stat, self.rslt_data,
+                                                                               bo_id_data, bo_data)
+        return rin, stat, bo_id_data, bo_data, rslt_data
 
     def next_select_LAQA(self):
         rin = self.rin
@@ -922,14 +925,14 @@ class Ctrl_job:
         # ---------- EA
         ea_id_data = (self.gen, self.id_queueing, self.id_running)
         ea_data = self.ea_data
-        stat, ea_id_data, ea_data, rslt_data, init_struc_data = ea_next_gen.next_gen(self.cryspy_in,
+        rin, stat, ea_id_data, ea_data, rslt_data, init_struc_data = ea_next_gen.next_gen(rin,
                                                                                      self.stat,
                                                                                      self.init_struc_data,
                                                                                      self.opt_struc_data,
                                                                                      self.rslt_data,
                                                                                      ea_id_data,
                                                                                      ea_data)
-        return stat, ea_id_data, ea_data, rslt_data, init_struc_data
+        return rin, stat, ea_id_data, ea_data, rslt_data, init_struc_data
 
     def save_id_data(self):
         rin = self.rin

@@ -9,17 +9,15 @@ import numpy as np
 from ..BO.combo_cryspy import Policy_cryspy
 from ..IO import io_stat, out_results, pkl_data
 # from ..IO import read_input as rin
-from ..IO.rin_class import Rin
 
 
-def next_select(cryspy_in, stat, rslt_data, bo_id_data, bo_data):
+def next_select(rin, stat, rslt_data, bo_id_data, bo_data):
     """
 
     The content of crspy_in will be changed during this function.
     config.set('BO', 'manual_select_bo', '')
 
     """
-    rin = Rin(cryspy_in)
     # ---------- out and log
     with open('cryspy.out', 'a') as fout:
         fout.write('# ------ Bayesian optimization\n')
@@ -50,11 +48,14 @@ def next_select(cryspy_in, stat, rslt_data, bo_id_data, bo_data):
         nselect = rin.nselect_bo - len(rin.manual_select_bo)
         id_queueing = rin.manual_select_bo
         # ------ delete the value for manual_select_bo in cryspy.in
-        config = configparser.ConfigParser()
-        config.read(cryspy_in)
-        config.set('BO', 'manual_select_bo', '')
-        with open(cryspy_in, 'w') as f:
-            config.write(f)
+        if False:
+            config = configparser.ConfigParser()
+            config.read(cryspy_in)
+            config.set('BO', 'manual_select_bo', '')
+            with open(cryspy_in, 'w') as f:
+                config.write(f)
+        else:
+            rin.set('BO', 'manual_select_bo', '')
     else:
         nselect = rin.nselect_bo
     # ------ if number of remaining structures < nselect
@@ -158,7 +159,7 @@ def next_select(cryspy_in, stat, rslt_data, bo_id_data, bo_data):
         fout.write('selected_id: {}\n\n'.format(
             ' '.join(str(a) for a in id_queueing)))
 
-    return stat, bo_id_data, bo_data, rslt_data
+    return rin, stat, bo_id_data, bo_data, rslt_data
 
 
 def bayes_opt(rin, s_act, descriptors, targets, nselect):

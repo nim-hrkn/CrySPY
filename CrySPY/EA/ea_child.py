@@ -7,13 +7,11 @@ from ..gen_struc.random.random_generation import Rnd_struc_gen
 from ..gen_struc.random.gen_pyxtal import Rnd_struc_gen_pyxtal
 from ..IO import pkl_data
 # from ..IO import read_input as rin
-from ..IO.rin_class import Rin
 
 from ..common import aiida_major_version
 
 
-def child_gen(sp, init_struc_data, cryspy_in, stat):
-    rin = Rin(cryspy_in)
+def child_gen(sp, init_struc_data, rin, stat):
     if aiida_major_version>=1:
         tot_struc = int(stat["basic"]["tot_struc"])
     else:

@@ -9,17 +9,13 @@ from ..gen_struc.EA.select_parents import Select_parents
 from ..IO import out_results
 from ..IO import change_input, io_stat, pkl_data
 # from ..IO import read_input as rin
-from ..IO.rin_class import Rin
+# from ..IO.rin_class import Rin
 
 from ..common import aiida_major_version
 
 
-def next_gen(cryspy_in, stat, init_struc_data, opt_struc_data, rslt_data, ea_id_data, ea_data=None):
-    rin = Rin(cryspy_in)
-    if aiida_major_version>=1:
-        tot_struc = int(stat["basic"]["tot_struc"])
-    else:
-        tot_struc = rin.tot_struc
+def next_gen(rin, stat, init_struc_data, opt_struc_data, rslt_data, ea_id_data, ea_data=None):
+    tot_struc = rin.tot_struc
     # ---------- ea_id_data
     gen, id_queueing, id_running = ea_id_data
 
@@ -55,7 +51,7 @@ def next_gen(cryspy_in, stat, init_struc_data, opt_struc_data, rslt_data, ea_id_
 
     # ---------- generate offspring by EA
     print('# -- Generate structures')
-    init_struc_data, eagen = child_gen(sp, init_struc_data, cryspy_in, stat)
+    init_struc_data, eagen = child_gen(sp, init_struc_data, rin, stat)
 
     # ---------- select elite
     if rin.n_elite > 0:
@@ -126,6 +122,7 @@ def next_gen(cryspy_in, stat, init_struc_data, opt_struc_data, rslt_data, ea_id_
     # ---------- change the value of tot_struc
     config = change_input.config_read()
     change_input.change_basic(config, 'tot_struc', tot_struc + rin.n_pop)
+    rin.tot_struc = tot_struc + rin.n_pop
     change_input.write_config(config)
     print('# -- changed cryspy.in')
     print('Changed the value of tot_struc in cryspy.in'
@@ -138,5 +135,4 @@ def next_gen(cryspy_in, stat, init_struc_data, opt_struc_data, rslt_data, ea_id_
     io_stat.set_id(stat, 'id_queueing', id_queueing)
     io_stat.write_stat(stat)
 
-    if aiida_major_version >= 1:
-        return stat, ea_id_data, ea_data, rslt_data, init_struc_data
+    return rin, stat, ea_id_data, ea_data, rslt_data, init_struc_data
