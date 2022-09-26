@@ -149,13 +149,15 @@ def initialize(cryspy_in: Union[str, io.StringIO], init_struc_data=None):
         id_data = bo_id_data
         detail_data = bo_data
     elif rin.algo == 'LAQA':
-        laqa_init.initialize(stat)
+        stat, laqa_id_data, laqa_data = laqa_init.initialize(rin, stat)
+        id_data = laqa_id_data
+        detail_data = laqa_data
     elif rin.algo == "EA":
         stat, ea_id_data, ea_data, rslt_data = ea_init.initialize(rin, stat, rslt_data)
         id_data = ea_id_data
         detail_data = ea_data
 
-    if aiida_major_version == 0:
+    if True:
         # ---------- initialize etc
         if rin.kpt_flag:
             kpt_data = {}

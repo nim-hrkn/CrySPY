@@ -91,7 +91,8 @@ class Rin:
         emax_bo = None
         emin_bo = None
         nselect_laqa = None
-        weight_laqa = None
+        wf_laqa = None
+        wf_laqa = None
         n_pop = None
         n_crsov = None
         n_perm = None
@@ -142,7 +143,7 @@ class Rin:
         if algo not in ['RS', 'BO', 'LAQA', 'EA']:
             raise NotImplementedError('algo must be RS, BO, LAQA, or EA')
         if algo == 'LAQA':
-            if calc_code not in ['VASP', 'QE', 'soiap']:
+            if calc_code not in ['VASP', 'QE', 'soiap', 'LAMMPS']:
                 raise NotImplementedError('LAQA: only VASP, QE, and soiap for now')
         tot_struc = config.getint('basic', 'tot_struc')
         if tot_struc <= 0:
@@ -468,10 +469,15 @@ class Rin:
 
             # ------ read intput variables
             nselect_laqa = config.getint('LAQA', 'nselect_laqa')
+
             try:
-                weight_laqa = config.getfloat('LAQA', 'weight_laqa')
+                wf_laqa = config.getfloat('LAQA', 'wf_laqa')
             except configparser.NoOptionError:
-                weight_laqa = 1.0
+                wf_laqa = 1.0
+            try:
+                ws_laqa = config.getfloat('LAQA', 'ws_laqa')
+            except configparser.NoOptionError:
+                ws_laqa = 1.0
 
         # ---------- EA
         if algo == 'EA' or append_struc_ea:
@@ -746,7 +752,8 @@ class Rin:
         self.emax_bo = emax_bo
         self.emin_bo = emin_bo
         self.nselect_laqa = nselect_laqa
-        self.weight_laqa = weight_laqa
+        self.wf_laqa = wf_laqa
+        self.ws_laqa = ws_laqa
         self.n_pop = n_pop
         self.n_crsov = n_crsov
         self.n_perm = n_perm
@@ -858,7 +865,8 @@ class Rin:
         emax_bo = self.emax_bo
         emin_bo = self.emin_bo
         nselect_laqa = self.nselect_laqa
-        weight_laqa = self.weight_laqa
+        wf_laqa = self.wf_laqa
+        ws_laqa = self.ws_laqa
         n_pop = self.n_pop
         n_crsov = self.n_crsov
         n_perm = self.n_perm
@@ -970,8 +978,8 @@ class Rin:
             if algo == 'LAQA':
                 fout.write('# ------ LAQA section\n')
                 fout.write('nselect_laqa = {}\n'.format(nselect_laqa))
-                fout.write('weight_laqa = {}\n'.format(weight_laqa))
-
+                fout.write('wf_laqa = {}\n'.format(wf_laqa))
+                fout.write('ws_laqa = {}\n'.format(ws_laqa))
             # ------ EA
             if algo == 'EA' or append_struc_ea:
                 fout.write('# ------ EA section\n')
@@ -1111,7 +1119,8 @@ class Rin:
         emax_bo = self.emax_bo
         emin_bo = self.emin_bo
         nselect_laqa = self.nselect_laqa
-        weight_laqa = self.weight_laqa
+        wf_laqa = self.wf_laqa
+        ws_laqa = self.ws_laqa
         n_pop = self.n_pop
         n_crsov = self.n_crsov
         n_perm = self.n_perm
@@ -1217,7 +1226,8 @@ class Rin:
         # ---------- LAQA
         if algo == 'LAQA':
             stat.set('LAQA', 'nselect_laqa', '{}'.format(nselect_laqa))
-            stat.set('LAQA', 'weight_laqa', '{}'.format(weight_laqa))
+            stat.set('LAQA', 'wf_laqa', '{}'.format(wf_laqa))
+            stat.set('LAQA', 'ws_laqa', '{}'.format(ws_laqa))
 
         # ---------- EA
         elif algo == 'EA' or append_struc_ea:
@@ -1352,7 +1362,8 @@ class Rin:
         emax_bo = self.emax_bo
         emin_bo = self.emin_bo
         nselect_laqa = self.nselect_laqa
-        weight_laqa = self.weight_laqa
+        wf_laqa = self.wf_laqa
+        ws_laqa = self.ws_laqa
         n_pop = self.n_pop
         n_crsov = self.n_crsov
         n_perm = self.n_perm
@@ -1503,8 +1514,8 @@ class Rin:
         # ------ LAQA
         if old_algo == 'LAQA':
             old_nselect_laqa = stat.getint('LAQA', 'nselect_laqa')
-            old_weight_laqa = stat.getfloat('LAQA', 'weight_laqa')
-
+            old_wf_laqa = stat.getfloat('LAQA', 'wf_laqa')
+            old_ws_laqa = stat.getfloat('LAQA', 'ws_laqa')
         # ------ EA
         if old_algo == 'EA':
             old_n_pop = stat.getint('EA', 'n_pop')
@@ -1785,10 +1796,7 @@ class Rin:
                 self.diff_out('nselect_laqa', old_nselect_laqa, nselect_laqa)
                 io_stat.set_input_common(stat, sec, 'nselect_laqa', nselect_laqa)
                 logic_change = True
-            if not old_weight_laqa == weight_laqa:
-                self.diff_out('weight_laqa', old_weight_laqa, weight_laqa)
-                io_stat.set_input_common(stat, sec, 'weight_laqa', weight_laqa)
-                logic_change = True
+
 
         # ------ EA
         sec = 'EA'

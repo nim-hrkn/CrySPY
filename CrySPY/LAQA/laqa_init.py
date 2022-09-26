@@ -3,10 +3,10 @@ Initialize LAQA
 '''
 
 from ..IO import io_stat, pkl_data
-from ..IO import read_input as rin
+# from ..IO import read_input as rin
 
 
-def initialize(stat):
+def initialize(rin, stat):
     print('\n# ---------- Initialize LAQA')
     with open('cryspy.out', 'a') as fout:
         fout.write('\n# ---------- Initilalize LAQA\n')
@@ -55,3 +55,5 @@ def initialize(stat):
         with open('cryspy.out', 'a') as fout:
             fout.write('selected_id: {}\n\n'.format(
                 ' '.join(str(a) for a in id_queueing)))
+
+    return stat, laqa_id_data, laqa_data
