@@ -751,9 +751,10 @@ class Rin:
         self.manual_select_bo = manual_select_bo
         self.emax_bo = emax_bo
         self.emin_bo = emin_bo
-        self.nselect_laqa = nselect_laqa
-        self.wf_laqa = wf_laqa
-        self.ws_laqa = ws_laqa
+        if algo == 'LAQA':
+            self.nselect_laqa = nselect_laqa
+            self.wf_laqa = wf_laqa
+            self.ws_laqa = ws_laqa
         self.n_pop = n_pop
         self.n_crsov = n_crsov
         self.n_perm = n_perm
@@ -864,9 +865,10 @@ class Rin:
         manual_select_bo = self.manual_select_bo
         emax_bo = self.emax_bo
         emin_bo = self.emin_bo
-        nselect_laqa = self.nselect_laqa
-        wf_laqa = self.wf_laqa
-        ws_laqa = self.ws_laqa
+        if algo=='LAQA':
+            nselect_laqa = self.nselect_laqa
+            wf_laqa = self.wf_laqa
+            ws_laqa = self.ws_laqa
         n_pop = self.n_pop
         n_crsov = self.n_crsov
         n_perm = self.n_perm

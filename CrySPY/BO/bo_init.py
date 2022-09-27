@@ -12,7 +12,7 @@ from ..IO import io_stat, pkl_data
 # from ..IO import read_input as rin
 
 
-def initialize(rin, stat, init_struc_data, rslt_data):
+def initialize(rin, init_struc_data, rslt_data):
     # ---------- log
     print('\n# ---------- Selection: 1')
     with open('cryspy.out', 'a') as fout:
@@ -74,10 +74,11 @@ def initialize(rin, stat, init_struc_data, rslt_data):
     pkl_data.save_bo_data(bo_data)
 
     # ---------- status
-    io_stat.set_common(stat, 'selection', n_selection)
-    io_stat.set_id(stat, 'selected_id', id_queueing)
-    io_stat.set_id(stat, 'id_queueing', id_queueing)
-    io_stat.write_stat(stat)
+    if False:
+        io_stat.set_common(stat, 'selection', n_selection)
+        io_stat.set_id(stat, 'selected_id', id_queueing)
+        io_stat.set_id(stat, 'id_queueing', id_queueing)
+        io_stat.write_stat(stat)
 
     # ---------- out and log
     print('selected_id: {}'.format(' '.join(str(a) for a in id_queueing)))
@@ -85,4 +86,4 @@ def initialize(rin, stat, init_struc_data, rslt_data):
         fout.write('selected_id: {}\n\n'.format(
             ' '.join(str(a) for a in id_queueing)))
 
-    return stat, bo_id_data, bo_data, rslt_data
+    return bo_id_data, bo_data, rslt_data

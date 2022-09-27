@@ -6,7 +6,7 @@ from ..IO import io_stat, pkl_data
 # from ..IO import read_input as rin
 
 
-def initialize(rin, stat):
+def initialize(rin):
     print('\n# ---------- Initialize LAQA')
     with open('cryspy.out', 'a') as fout:
         fout.write('\n# ---------- Initilalize LAQA\n')
@@ -36,11 +36,12 @@ def initialize(rin, stat):
     pkl_data.save_laqa_data(laqa_data)
 
     # ---------- status
-    io_stat.set_common(stat, 'selection', 0)
-    io_stat.set_common(stat, 'total_step', 0)
-    io_stat.set_id(stat, 'selected_id', id_queueing)    # all IDs
-    io_stat.set_id(stat, 'id_queueing', id_queueing)    # all IDs
-    io_stat.write_stat(stat)
+    if False:
+        io_stat.set_common(stat, 'selection', 0)
+        io_stat.set_common(stat, 'total_step', 0)
+        io_stat.set_id(stat, 'selected_id', id_queueing)    # all IDs
+        io_stat.set_id(stat, 'id_queueing', id_queueing)    # all IDs
+        io_stat.write_stat(stat)
 
     # ---------- out and log
     print('# ---------- Selection 0')
@@ -56,4 +57,4 @@ def initialize(rin, stat):
             fout.write('selected_id: {}\n\n'.format(
                 ' '.join(str(a) for a in id_queueing)))
 
-    return stat, laqa_id_data, laqa_data
+    return laqa_id_data, laqa_data

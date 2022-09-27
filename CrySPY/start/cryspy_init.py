@@ -12,7 +12,7 @@ from ..BO import bo_init
 from ..EA import ea_init
 from ..gen_struc.random.random_generation import Rnd_struc_gen
 from ..gen_struc.random.gen_pyxtal import Rnd_struc_gen_pyxtal
-from ..IO import pkl_data, io_stat
+from ..IO import pkl_data
 # from ..IO import read_input as rin
 from ..IO.rin_class import Rin
 from ..LAQA import laqa_init
@@ -44,9 +44,10 @@ def initialize(cryspy_in: Union[str, io.StringIO], init_struc_data=None):
     else:
         raise TypeError('unknown type for cryspy_in. type={type(cryspy_in)}')
 
-    stat = io_stat.stat_init(rin)    # initialize stat
-    rin.writeout()        # write input data in output file, cryspy.out
-    rin.save_stat(stat)   # save input variables in cryspy.stat
+    if False:
+        stat = io_stat.stat_init(rin)    # initialize stat
+        rin.writeout()        # write input data in output file, cryspy.out
+        rin.save_stat(stat)   # save input variables in cryspy.stat
 
     # ---------- make data directory
     os.makedirs('data/pkl_data', exist_ok=True)
@@ -141,19 +142,19 @@ def initialize(cryspy_in: Union[str, io.StringIO], init_struc_data=None):
 
     # ---------- initialize for each algorithm
     if rin.algo == 'RS':
-        stat, rs_id_data = rs_init.initialize(rin, stat)
+        rs_id_data = rs_init.initialize(rin)
         id_data = rs_id_data
         detail_data = None
     elif rin.algo == 'BO':
-        stat, bo_id_data, bo_data, rslt_data = bo_init.initialize(rin, stat, init_struc_data, rslt_data)
+        bo_id_data, bo_data, rslt_data = bo_init.initialize(rin, init_struc_data, rslt_data)
         id_data = bo_id_data
         detail_data = bo_data
     elif rin.algo == 'LAQA':
-        stat, laqa_id_data, laqa_data = laqa_init.initialize(rin, stat)
+        laqa_id_data, laqa_data = laqa_init.initialize(rin)
         id_data = laqa_id_data
         detail_data = laqa_data
     elif rin.algo == "EA":
-        stat, ea_id_data, ea_data, rslt_data = ea_init.initialize(rin, stat, rslt_data)
+        ea_id_data, ea_data, rslt_data = ea_init.initialize(rin, rslt_data)
         id_data = ea_id_data
         detail_data = ea_data
 
@@ -175,4 +176,4 @@ def initialize(cryspy_in: Union[str, io.StringIO], init_struc_data=None):
             stress_step_data = {}
             pkl_data.save_stress_step(stress_step_data)
 
-    return init_struc_data, opt_struc_data, rin, stat, rslt_data, id_data, detail_data
+    return init_struc_data, opt_struc_data, rin, rslt_data, id_data, detail_data

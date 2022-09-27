@@ -10,8 +10,9 @@ from ..IO import io_stat, pkl_data
 from ..common import aiida_major_version
 
 
-def initialize(rin, stat, rslt_data):
-    tot_struc = int(stat["basic"]["tot_struc"])
+def initialize(rin, rslt_data):
+    # tot_struc = int(stat["basic"]["tot_struc"])
+    tot_struc = rin.tot_struc
     # ---------- log
     print('\n# ---------- Initialize evolutionary algorithm')
     print('# ------ Generation 1')
@@ -61,9 +62,10 @@ def initialize(rin, stat, rslt_data):
     pkl_data.save_rslt(rslt_data)
 
     # ---------- status
-    io_stat.set_common(stat, 'generation', gen)
-    io_stat.set_id(stat, 'id_queueing', id_queueing)
-    io_stat.write_stat(stat)
+    if False:
+        io_stat.set_common(stat, 'generation', gen)
+        io_stat.set_id(stat, 'id_queueing', id_queueing)
+        io_stat.write_stat(stat)
 
     if aiida_major_version >= 1:
-        return stat, ea_id_data, ea_data, rslt_data
+        return ea_id_data, ea_data, rslt_data
