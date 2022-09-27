@@ -7,11 +7,11 @@ import configparser
 import numpy as np
 
 from ..BO.combo_cryspy import Policy_cryspy
-from ..IO import io_stat, out_results, pkl_data
+from ..IO import out_results, pkl_data
 # from ..IO import read_input as rin
 
 
-def next_select(rin, stat, rslt_data, bo_id_data, bo_data):
+def next_select(rin, rslt_data, bo_id_data, bo_data):
     """
 
     The content of crspy_in will be changed during this function.
@@ -141,11 +141,7 @@ def next_select(rin, stat, rslt_data, bo_id_data, bo_data):
     bo_id_data = (n_selection, id_queueing, id_running, id_select_hist)
     pkl_data.save_bo_id(bo_id_data)
 
-    # ---------- status
-    io_stat.set_common(stat, 'selection', n_selection)
-    io_stat.set_id(stat, 'selected_id', id_queueing)
-    io_stat.set_id(stat, 'id_queueing', id_queueing)
-    io_stat.write_stat(stat)
+  
 
     # ---------- out and log
     print('\n\n# ---------- Selection: {}'.format(n_selection))
@@ -155,7 +151,7 @@ def next_select(rin, stat, rslt_data, bo_id_data, bo_data):
         fout.write('selected_id: {}\n\n'.format(
             ' '.join(str(a) for a in id_queueing)))
 
-    return rin, stat, bo_id_data, bo_data, rslt_data
+    return rin, bo_id_data, bo_data, rslt_data
 
 
 def bayes_opt(rin, s_act, descriptors, targets, nselect):
