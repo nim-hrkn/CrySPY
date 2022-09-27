@@ -16,7 +16,7 @@ from ..gen_struc.struc_util import out_poscar, out_cif
 from ..interface import select_code
 # from ..IO import read_input as rin
 from ..IO.rin_class import Rin
-from ..IO import change_input, io_stat, pkl_data
+from ..IO import change_input, pkl_data
 from ..IO.out_results import out_rslt
 from ..IO.out_results import out_laqa_status, out_laqa_step, out_laqa_score
 from ..IO.out_results import out_laqa_energy, out_laqa_bias
@@ -30,7 +30,7 @@ import io
 
 
 class Ctrl_job:
-    def __init__(self, cryspy_in: Union[Rin, io.StringIO], stat, init_struc_data,
+    def __init__(self, cryspy_in: Union[Rin, io.StringIO],init_struc_data,
                  opt_struc_data=None, rslt_data=None, id_data=None, detail_data=None):
         if isinstance(cryspy_in, io.StringIO):
             rin = Rin(cryspy_in)
@@ -40,7 +40,6 @@ class Ctrl_job:
             raise TypeError(f'type of cryspy_in must be str|Rin, type={type(cryspy_in)}')
 
         self.rin = rin
-        self.stat = stat
         self.init_struc_data = init_struc_data
         if aiida_major_version >= 1:
             if opt_struc_data is None:
@@ -102,7 +101,7 @@ class Ctrl_job:
     def check_job(self):
         """check all the job status
 
-        returns self.tmp_running, self.tmp_queueing, self.job_stat, self.stage_stat.
+        returns self.tmp_running, self.tmp_queueing, self.stage_stat.
 
         Raises:
             SystemExit: ID is wrong in work/{:06}
@@ -111,6 +110,8 @@ class Ctrl_job:
             tuples containing,
             _type_: _description_
         """
+        print("fix not calling check_job")
+        raise Exception
         rin = self.rin
         # ---------- option: recalc
         if rin.recalc:
@@ -122,37 +123,38 @@ class Ctrl_job:
             while len(self.tmp_running) < rin.njob and self.tmp_queueing:
                 self.tmp_running.append(self.tmp_queueing.pop(0))
         # ---------- initialize
-        self.stage_stat = {}    # key: Structure ID
-        self.job_stat = {}
-        # ---------- check job status
-        for cid in self.tmp_running:
-            # ------ mkdir
-            if not os.path.isdir('work/{:06}'.format(cid)):
-                os.mkdir('work/{:06}'.format(cid))
-            # ------ check stat_job file
-            stat_path = 'work/{:06}'.format(cid) + '/stat_job'
-            try:
-                with open(stat_path, 'r') as fstat:
-                    istat = fstat.readline()    # id
-                    sstat = fstat.readline()    # stage
-                    jstat = fstat.readline()    # submitted or done or ...
-                self.stage_stat[cid] = int(sstat.split()[0])
-                if not cid == int(istat.split()[0]):
-                    raise SystemExit('ID is wrong in work/{:06}'.format(cid))
-                self.stage_stat[cid] = int(sstat.split()[0])
-                if jstat[0:3] == 'sub':
-                    self.job_stat[cid] = 'submitted'
-                elif jstat[0:4] == 'done':
-                    self.job_stat[cid] = 'done'
-                elif jstat[0:4] == 'skip':
-                    self.job_stat[cid] = 'skip'
-                else:
-                    self.job_stat[cid] = 'else'
-            except IOError:
-                self.stage_stat[cid] = 'no_file'
-                self.job_stat[cid] = 'no_file'
+        if False:
+            self.stage_stat = {}    # key: Structure ID
+            self.job_stat = {}
+            # ---------- check job status
+            for cid in self.tmp_running:
+                # ------ mkdir
+                if not os.path.isdir('work/{:06}'.format(cid)):
+                    os.mkdir('work/{:06}'.format(cid))
+                # ------ check stat_job file
+                stat_path = 'work/{:06}'.format(cid) + '/stat_job'
+                try:
+                    with open(stat_path, 'r') as fstat:
+                        istat = fstat.readline()    # id
+                        sstat = fstat.readline()    # stage
+                        jstat = fstat.readline()    # submitted or done or ...
+                    self.stage_stat[cid] = int(sstat.split()[0])
+                    if not cid == int(istat.split()[0]):
+                        raise SystemExit('ID is wrong in work/{:06}'.format(cid))
+                    self.stage_stat[cid] = int(sstat.split()[0])
+                    if jstat[0:3] == 'sub':
+                        self.job_stat[cid] = 'submitted'
+                    elif jstat[0:4] == 'done':
+                        self.job_stat[cid] = 'done'
+                    elif jstat[0:4] == 'skip':
+                        self.job_stat[cid] = 'skip'
+                    else:
+                        self.job_stat[cid] = 'else'
+                except IOError:
+                    self.stage_stat[cid] = 'no_file'
+                    self.job_stat[cid] = 'no_file'
 
-        return self.tmp_running, self.tmp_queueing, self.job_stat, self.stage_stat
+        return self.tmp_running, self.tmp_queueing
 
     def set_recalc(self):
         rin = self.rin
@@ -163,7 +165,6 @@ class Ctrl_job:
                     tid))
         # ---------- append IDs to the head of id_queueing
         self.id_queueing = rin.recalc + self.id_queueing
-        io_stat.set_id(self.stat, 'id_queueing', self.id_queueing)
         ea_id_data = self.save_id_data()
         # ---------- log and out
         print('# -- Recalc')
@@ -179,9 +180,8 @@ class Ctrl_job:
         change_input.change_option(rin, 'recalc', '')
         change_input.write_config(config)
         print('Clear recalc in cryspy.in')
-        io_stat.set_input_common(self.stat, 'option', 'recalc', '')
-        io_stat.write_stat(self.stat)
-        return rin, self.stat, ea_id_data
+
+        return rin, ea_id_data
 
     def handle_job(self):
         """change job status for all the jobs
@@ -204,14 +204,14 @@ class Ctrl_job:
             if self.job_stat[cid] == 'submitted':
                 print('ID {:>6}: still queueing or running'.format(cid))
             elif self.job_stat[cid] == 'done':
-                stat, rslt_data, opt_struc, id_data = self.ctrl_done(cid)
+                rslt_data, opt_struc, id_data = self.ctrl_done(cid)
             elif self.job_stat[cid] == 'skip':
-                stat, id_data, rslt_data = self.ctrl_skip(cid)
+                id_data, rslt_data = self.ctrl_skip(cid)
             elif self.job_stat[cid] == 'else':
                 raise ValueError('Wrong job_stat in {}. '.format(
                     self.work_path))
             elif self.job_stat[cid] == 'no_file':
-                stat, id_data = self.ctrl_next_struc(cid)
+                id_data = self.ctrl_next_struc(cid)
             else:
                 raise ValueError('Unexpected error in {}stat_job'.format(
                     self.work_path))
@@ -224,7 +224,7 @@ class Ctrl_job:
         It calls ctrl_next_stage() if current_stage< nstage
               or ctrl_collect() if current_stage==nstage.
 
-        Returns are collective variables, stat, rslt_data, opt_struc, id_data.
+        Returns are collective variables, rslt_data, opt_struc, id_data.
 
         Args:
             cid (int): job number.
@@ -316,6 +316,8 @@ class Ctrl_job:
             tuples containing
             ConfigParser: stat
         """
+        print("fix not calling submit_next_stage.")
+        raise Exception
         if cid != self.current_id:
             raise ValueError(f'internal error cid != self.current_id. {cid} {self.current_id}')
         # ---------- submit job
@@ -329,9 +331,7 @@ class Ctrl_job:
                 subprocess.Popen([rin.jobcmd, rin.jobfile],
                                  stdout=logf, stderr=logf)
         os.chdir('../../')    # go back to ..
-        # ---------- save status
-        io_stat.set_stage(self.stat, self.current_id, self.current_stage + 1)
-        io_stat.write_stat(self.stat)
+
         # ---------- log
         print('    submitted job, ID {0:>6} Stage {1}'.format(
             self.current_id, self.current_stage + 1))
@@ -340,7 +340,7 @@ class Ctrl_job:
     def ctrl_collect(self, cid):
         """collect process for job number cid.
 
-        Returns are collective variables, stat, rslt_data, opt_struc, id_data.
+        Returns are collective variables,rslt_data, opt_struc, id_data.
 
         Args:
             cid (int): job number.
@@ -461,9 +461,7 @@ class Ctrl_job:
                 self.force_step_data[self.current_id][-1])
             self.laqa_step[self.current_id].append(
                 len(self.force_step_data[self.current_id][-1]))
-        # ------ save status
-        io_stat.set_common(self.stat, 'total_step', sum(self.tot_step_select))
-        io_stat.write_stat(self.stat)
+
         # ---------- append laqa struc
         self.laqa_struc[self.current_id].append(opt_struc)
         # ---------- append laqa energy
@@ -618,7 +616,7 @@ class Ctrl_job:
         if next_struc_data is None:
             print('ID {:>6}: initial structure is None'.format(
                 self.current_id))
-            stat, id_data, rslt_data = self.ctrl_skip(cid)
+            id_data, rslt_data = self.ctrl_skip(cid)
         # ------ normal initial structure data
         else:
             # -- prepare input files for structure optimization
@@ -652,6 +650,8 @@ class Ctrl_job:
         Raises:
             ValueError: 'internal error cid != self.current_id.'
         """
+        print("fix not calling submit_next_struc")
+        raise Exception
         rin = self.rin
         if cid != self.current_id:
             raise ValueError(f'internal error cid != self.current_id. {cid} {self.current_id}')
@@ -672,7 +672,7 @@ class Ctrl_job:
 
         It gets symmetry information.
 
-        Returns are collective variables, stat, id_data, rslt_data.
+        Returns are collective variables, id_data, rslt_data.
 
         Args:
             cid (int): job number.
@@ -779,9 +779,8 @@ class Ctrl_job:
     def update_status(self, cid, operation):
         """update the status of job number cid with operation.
 
-        Returns are collective variables, stat, id_data
+        Returns are collective variables, id_data
 
-        stat is changed, but isn't outputted because io_data outputs the same data.
 
         Args:
             cid (int): current_id
@@ -793,7 +792,6 @@ class Ctrl_job:
 
         Returns:
             tupples containing
-            ConfigParser: stat
             list: id_data
         """
         if cid != self.current_id:
@@ -802,17 +800,14 @@ class Ctrl_job:
         if operation == 'submit':
             self.id_running.append(self.current_id)
             self.id_queueing.remove(self.current_id)
-            io_stat.set_stage(self.stat, self.current_id, 1)
         elif operation == 'fin':
             if self.current_id in self.id_queueing:
                 self.id_queueing.remove(self.current_id)
             if self.current_id in self.id_running:
                 self.id_running.remove(self.current_id)
-            io_stat.clean_id(self.stat, self.current_id)
         else:
             raise ValueError('operation is wrong')
-        io_stat.set_id(self.stat, 'id_queueing', self.id_queueing)
-        io_stat.write_stat(self.stat)  # only id_queue
+
         # ---------- save id_data
         id_data = self.save_id_data()
         if aiida_major_version >= 1:
@@ -853,13 +848,13 @@ class Ctrl_job:
         rin = self.rin
         init_struc_data = None
         if rin.algo == 'BO':
-            rin, stat, bo_id_data, bo_data, rslt_data = self.next_select_BO()
-            return rin, stat, init_struc_data, bo_id_data, bo_data, rslt_data
+            rin, bo_id_data, bo_data, rslt_data = self.next_select_BO()
+            return rin, init_struc_data, bo_id_data, bo_data, rslt_data
         if rin.algo == 'LAQA':
             self.next_select_LAQA()
         if rin.algo == 'EA':
-            rin, stat, init_struc_data, ea_id_data, ea_data, rslt_data = self.next_gen_EA()
-            return rin, stat, init_struc_data, ea_id_data, ea_data, rslt_data
+            rin, init_struc_data, ea_id_data, ea_data, rslt_data = self.next_gen_EA()
+            return rin, init_struc_data, ea_id_data, ea_data, rslt_data
 
     def next_select_BO(self):
         rin = self.rin
@@ -889,9 +884,9 @@ class Ctrl_job:
                    self.bo_mean, self.bo_var, self.bo_score)
         bo_id_data = (self.n_selection, self.id_queueing,
                       self.id_running, self.id_select_hist)
-        rin, stat, bo_id_data, bo_data, rslt_data = bo_next_select.next_select(rin, self.stat, self.rslt_data,
+        rin, bo_id_data, bo_data, rslt_data = bo_next_select.next_select(rin, self.rslt_data,
                                                                                bo_id_data, bo_data)
-        return rin, stat, bo_id_data, bo_data, rslt_data
+        return rin, bo_id_data, bo_data, rslt_data
 
     def next_select_LAQA(self):
         rin = self.rin
@@ -905,7 +900,7 @@ class Ctrl_job:
                         self.id_select_hist)
         laqa_data = (self.tot_step_select, self.laqa_step, self.laqa_struc,
                      self.laqa_energy, self.laqa_bias, self.laqa_score)
-        laqa_next_selection.next_selection(self.stat, laqa_id_data, laqa_data)
+        laqa_next_selection.next_selection(laqa_id_data, laqa_data)
 
     def next_gen_EA(self):
         rin = self.rin
@@ -926,14 +921,13 @@ class Ctrl_job:
         # ---------- EA
         ea_id_data = (self.gen, self.id_queueing, self.id_running)
         ea_data = self.ea_data
-        rin, stat, init_struc_data, ea_id_data, ea_data, rslt_data = ea_next_gen.next_gen(rin,
-                                                                                          self.stat,
+        rin, init_struc_data, ea_id_data, ea_data, rslt_data = ea_next_gen.next_gen(rin,
                                                                                           self.init_struc_data,
                                                                                           self.opt_struc_data,
                                                                                           self.rslt_data,
                                                                                           ea_id_data,
                                                                                           ea_data)
-        return rin, stat, init_struc_data, ea_id_data, ea_data, rslt_data
+        return rin, init_struc_data, ea_id_data, ea_data, rslt_data
 
     def save_id_data(self):
         rin = self.rin

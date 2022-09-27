@@ -7,18 +7,17 @@ import pandas as pd
 from .ea_child import child_gen
 from ..gen_struc.EA.select_parents import Select_parents
 from ..IO import out_results
-from ..IO import change_input, io_stat, pkl_data
+from ..IO import change_input, pkl_data
 # from ..IO import read_input as rin
 # from ..IO.rin_class import Rin
 
 from ..common import aiida_major_version
 
 
-def next_gen(rin, stat, init_struc_data, opt_struc_data, rslt_data, ea_id_data, ea_data=None):
+def next_gen(rin, init_struc_data, opt_struc_data, rslt_data, ea_id_data, ea_data=None):
     tot_struc = rin.tot_struc
     # ---------- ea_id_data
     gen, id_queueing, id_running = ea_id_data
-
 
     # ---------- out and log
     with open('cryspy.out', 'a') as fout:
@@ -51,7 +50,7 @@ def next_gen(rin, stat, init_struc_data, opt_struc_data, rslt_data, ea_id_data, 
 
     # ---------- generate offspring by EA
     print('# -- Generate structures')
-    init_struc_data, eagen = child_gen(sp, init_struc_data, rin, stat)
+    init_struc_data, eagen = child_gen(sp, init_struc_data, rin)
 
     # ---------- select elite
     if rin.n_elite > 0:
@@ -129,10 +128,4 @@ def next_gen(rin, stat, init_struc_data, opt_struc_data, rslt_data, ea_id_data, 
           ' from {} to {}'.format(
               tot_struc, tot_struc + rin.n_pop))
 
-    # ---------- status
-    io_stat.set_input_common(stat, 'basic', 'tot_struc', tot_struc + rin.n_pop)
-    io_stat.set_common(stat, 'generation', gen)
-    io_stat.set_id(stat, 'id_queueing', id_queueing)
-    io_stat.write_stat(stat)
-
-    return rin, stat, init_struc_data, ea_id_data, ea_data, rslt_data
+    return rin, init_struc_data, ea_id_data, ea_data, rslt_data

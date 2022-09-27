@@ -11,9 +11,9 @@ from ..IO import pkl_data
 from ..common import aiida_major_version
 
 
-def child_gen(sp, init_struc_data, rin, stat):
+def child_gen(sp, init_struc_data, rin):
     if aiida_major_version>=1:
-        tot_struc = int(stat["basic"]["tot_struc"])
+        tot_struc = rin.tot_struc
     else:
         tot_struc = rin.tot_struc
     # ---------- instantiate EA_generation class

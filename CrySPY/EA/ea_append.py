@@ -9,16 +9,16 @@ import pandas as pd
 from .ea_child import child_gen
 from ..gen_struc.EA.select_parents import Select_parents
 from ..IO import out_results
-from ..IO import change_input, io_stat, pkl_data
+from ..IO import change_input, pkl_data
 # from ..IO import read_input as rin
 # from ..IO.rin_class import Rin
 from ..common import aiida_major_version
 
 
-def append_struc(rin, stat, init_struc_data, opt_struc_data, rslt_data):
-    
-    if aiida_major_version>=1:
-        tot_struc = int(stat["basic"]["tot_struc"])
+def append_struc(rin, init_struc_data, opt_struc_data, rslt_data):
+
+    if aiida_major_version >= 1:
+        tot_struc = rin.tot_struc
     else:
         tot_struc = rin.tot_struc
     # ---------- append structures by EA
@@ -112,13 +112,6 @@ def append_struc(rin, stat, init_struc_data, opt_struc_data, rslt_data):
           True, False))
     # ------ write
     # change_input.write_config(config)
-    
-
-    # ---------- status
-    io_stat.set_input_common(stat, 'basic', 'tot_struc', tot_struc)
-    io_stat.set_input_common(stat, 'option', 'append_struc_ea', False)
-    io_stat.write_stat(stat)
 
     # ---------- return
-    return rin, stat, init_struc_data, ea_data
-
+    return rin, init_struc_data, ea_data
