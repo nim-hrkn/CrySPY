@@ -3,6 +3,7 @@ Read input from cryspy.in
 '''
 
 import configparser
+from email.headerregistry import ContentTransferEncodingHeader
 import os
 import io
 
@@ -12,157 +13,14 @@ from typing import Union
 
 
 class Rin:
-    def __init__(self, cryspy_in=None):
+    def __init__(self, cryspy_in=None, process=True):
         if cryspy_in is None:
             pass
         else:
-            self.readin(cryspy_in)
+            if process:
+                self.readin(cryspy_in)
 
-    def readin(self, cryspy_in: Union[str, configparser.ConfigParser, io.StringIO]):
-        """
-        Args:
-            cryspy_in (configparser.ConfigParser|str): 'crypy.in' or its configparser instance.
-        """
-        print("cryspy_in", cryspy_in)
-        if isinstance(cryspy_in, configparser.ConfigParser):
-            config = cryspy_in
-        elif isinstance(cryspy_in, str):
-            # ---------- read cryspy.in
-            if not os.path.isfile(cryspy_in):
-                raise IOError(f'Could not find {cryspy_in} file')
-            config = configparser.ConfigParser(allow_no_value =False)
-            config.read(cryspy_in)
-            print(f"called config.read {cryspy_in}")
-        elif isinstance(cryspy_in, io.StringIO):
-            config = configparser.ConfigParser(allow_no_value =False)
-            content = cryspy_in.read()
-            config.read_string(content)
-            print("config is read from io.StringIO")
-        else:
-            raise TypeError(f'unknown type of cryspy_in. type={type(cryspy_in)}')
-
-        algo = None
-        calc_code = None
-        tot_struc = None
-        nstage = None
-        njob = None
-        jobcmd = None
-        jobfile = None
-        struc_mode = None
-        natot = None
-        atype = None
-        nat = None
-        mol_file = None
-        nmol = None
-        timeout_mol = None
-        rot_mol = None
-        nrot = None
-        vol_factor = None
-        vol_mu = None
-        vol_sigma = None
-        mindist = None
-        maxcnt = None
-        symprec = None
-        spgnum = None
-        use_find_wy = None
-        minlen = None
-        maxlen = None
-        dangle = None
-        stop_chkpt = None
-        load_struc_flag = None
-        stop_next_struc = None
-        recalc = None
-        append_struc_ea = None
-        energy_step_flag = None
-        struc_step_flag = None
-        force_step_flag = None
-        stress_step_flag = None
-        nselect_bo = None
-        score = None
-        num_rand_basis = None
-        cdev = None
-        dscrpt = None
-        fp_rmin = None
-        fp_rmax = None
-        fp_npoints = None
-        fp_sigma = None
-        max_select_bo = None
-        manual_select_bo = None
-        emax_bo = None
-        emin_bo = None
-        nselect_laqa = None
-        wf_laqa = None
-        wf_laqa = None
-        n_pop = None
-        n_crsov = None
-        n_perm = None
-        n_strain = None
-        n_rand = None
-        n_elite = None
-        fit_reverse = None
-        n_fittest = None
-        mindist_ea = None
-        slct_func = None
-        t_size = None
-        a_rlt = None
-        b_rlt = None
-        crs_lat = None
-        nat_diff_tole = None
-        ntimes = None
-        sigma_st = None
-        maxcnt_ea = None
-        maxgen_ea = None
-        emax_ea = None
-        emin_ea = None
-        kppvol = None
-        kpt_flag = None
-        force_gamma = None
-        qe_infile = None
-        qe_outfile = None
-        OMX_infile = None
-        OMX_outfile = None
-        upSpin = None
-        downSpin = None
-        soiap_infile = None
-        soiap_outfile = None
-        soiap_cif = None
-        lammps_infile = None
-        lammps_outfile = None
-        lammps_potential = None
-        lammps_data = None
-
-        # ---------- basic
-        # ------ global declaration
-
-        # ------ read intput variables
-        calc_code = config.get('basic', 'calc_code')
-        if calc_code not in ['VASP', 'QE', 'soiap', 'LAMMPS', 'OMX']:
-            raise NotImplementedError(
-                'calc_code must be VASP, QE, OMX, soiap, or LAMMPS')
-        algo = config.get('basic', 'algo')
-        if algo not in ['RS', 'BO', 'LAQA', 'EA']:
-            raise NotImplementedError('algo must be RS, BO, LAQA, or EA')
-        if algo == 'LAQA':
-            if calc_code not in ['VASP', 'QE', 'soiap', 'LAMMPS']:
-                raise NotImplementedError('LAQA: only VASP, QE, and soiap for now')
-        tot_struc = config.getint('basic', 'tot_struc')
-        if tot_struc <= 0:
-            raise ValueError('tot_struc <= 0, check tot_struc')
-        nstage = config.getint('basic', 'nstage')
-        if nstage <= 0:
-            raise ValueError('nstage <= 0, check nstage')
-        if algo == 'LAQA':
-            if not nstage == 1:
-                raise ValueError('nstage shoud be 1 in LAQA')
-        njob = config.getint('basic', 'njob')
-        if njob <= 0:
-            raise ValueError('njob <= 0, check njob')
-        jobcmd = config.get('basic', 'jobcmd')
-        jobfile = config.get('basic', 'jobfile')
-
-        # ---------- structure
-        # ------ global declaration
-
+    def process_structure(self, config):
         # ------ read intput variables
         try:
             struc_mode = config.get('structure', 'struc_mode')
@@ -321,9 +179,28 @@ class Rin:
             if dangle <= 0.0:
                 raise ValueError('dangle < 0.0, dangle must be positive')
 
-        # ---------- option
-        # ------ global declaration
+        self.struc_mode = struc_mode
+        self.natot = natot
+        self.atype = atype
+        self.nat = nat
+        self.mol_file = mol_file
+        self.nmol = nmol
+        self.timeout_mol = timeout_mol
+        self.rot_mol = rot_mol
+        self.nrot = nrot
+        self.vol_factor = vol_factor
+        self.vol_mu = vol_mu
+        self.vol_sigma = vol_sigma
+        self.mindist = mindist
+        self.maxcnt = maxcnt
+        self.symprec = symprec
+        self.spgnum = spgnum
+        self.use_find_wy = use_find_wy
+        self.minlen = minlen
+        self.maxlen = maxlen
+        self.dangle = dangle
 
+    def process_option(self, config, tot_struc, calc_code, algo):
         # ------ read intput variables
         try:
             stop_chkpt = config.getint('option', 'stop_chkpt')
@@ -380,355 +257,6 @@ class Rin:
         if algo == 'LAQA':
             stress_step_flag = True
 
-        # ---------- BO
-        if algo == 'BO':
-            # ------ global declaration
-
-            # ------ read intput variables
-            nselect_bo = config.getint('BO', 'nselect_bo')
-            if nselect_bo <= 0:
-                raise ValueError('nselect_bo <= 0, check nselect_bo')
-            elif tot_struc < nselect_bo:
-                raise ValueError('tot_struc < nselect_bo, check nselect_bo')
-            score = config.get('BO', 'score')
-            if score == 'TS' or score == 'EI' or score == 'PI':
-                pass
-            else:
-                raise ValueError('score must be TS, EI, or PI, check score')
-            try:
-                num_rand_basis = config.getint('BO', 'num_rand_basis')
-            except configparser.NoOptionError:
-                num_rand_basis = 0
-            try:
-                cdev = config.getfloat('BO', 'cdev')
-            except configparser.NoOptionError:
-                cdev = 0.001
-            dscrpt = config.get('BO', 'dscrpt')
-            if dscrpt == 'FP':
-                pass
-            else:
-                raise NotImplementedError('Now FP only')
-            # -- parameters for f-fingerprint
-            try:
-                fp_rmin = config.getfloat('BO', 'fp_rmin')
-            except configparser.NoOptionError:
-                fp_rmin = 0.5
-            try:
-                fp_rmax = config.getfloat('BO', 'fp_rmax')
-            except configparser.NoOptionError:
-                fp_rmax = 5.0
-            if fp_rmin < 0.0:
-                raise ValueError('fp_rmin < 0, check fp_rmin')
-            if fp_rmax < fp_rmin:
-                raise ValueError('fp_rmax < fp_rmin, check fp_rmin and fp_rmax')
-            try:
-                fp_npoints = config.getint('BO', 'fp_npoints')
-            except configparser.NoOptionError:
-                fp_npoints = 20
-            if fp_npoints <= 0:
-                raise ValueError('fp_npoints <= 0, check fp_npoints')
-            try:
-                fp_sigma = config.getfloat('BO', 'fp_sigma')
-            except configparser.NoOptionError:
-                fp_sigma = 1.0
-            if fp_sigma < 0:
-                raise ValueError('fp_sigma < 0, check fp_sigma')
-            # -- BO option
-            try:
-                max_select_bo = config.getint('BO', 'max_select_bo')
-            except configparser.NoOptionError:
-                max_select_bo = 0
-            if max_select_bo < 0:
-                raise ValueError('max_select_bo must be non-negative int')
-            try:
-                manual_select_bo = config.get('BO', 'manual_select_bo')
-                manual_select_bo = [int(x) for x in manual_select_bo.split()]
-            except configparser.NoOptionError:
-                manual_select_bo = []
-            if manual_select_bo:
-                for i in manual_select_bo:
-                    if not 0 <= i < tot_struc:
-                        raise ValueError('manual_select_bo must be'
-                                         ' non-negative int'
-                                         ' and less than tot_struc')
-            try:
-                emax_bo = config.getfloat('BO', 'emax_bo')
-            except (configparser.NoOptionError, configparser.NoSectionError):
-                emax_bo = None
-            try:
-                emin_bo = config.getfloat('BO', 'emin_bo')
-            except (configparser.NoOptionError, configparser.NoSectionError):
-                emin_bo = None
-            if emax_bo is not None and emin_bo is not None:
-                if emin_bo > emax_bo:
-                    raise ValueError('emax_bo < emin_bo, check emax_bo and emin_bo')
-
-        # ---------- LAQA
-        if algo == 'LAQA':
-            # ------ global declaration
-
-            # ------ read intput variables
-            nselect_laqa = config.getint('LAQA', 'nselect_laqa')
-
-            try:
-                wf_laqa = config.getfloat('LAQA', 'wf_laqa')
-            except configparser.NoOptionError:
-                wf_laqa = 1.0
-            try:
-                ws_laqa = config.getfloat('LAQA', 'ws_laqa')
-            except configparser.NoOptionError:
-                ws_laqa = 1.0
-
-        # ---------- EA
-        if algo == 'EA' or append_struc_ea:
-            # ------ global declaration
-
-            # global restart_gen
-            # ------ read intput variables
-            # -- number of structures
-            n_pop = config.getint('EA', 'n_pop')
-            if n_pop <= 0:
-                raise ValueError('n_pop must be positive int')
-            n_crsov = config.getint('EA', 'n_crsov')
-            if n_crsov < 0:
-                raise ValueError('n_crsov must be zero or positive int')
-            n_perm = config.getint('EA', 'n_perm')
-            if n_perm < 0:
-                raise ValueError('n_perm must be zero or positive int')
-            if n_perm != 0 and len(atype) == 1:
-                raise ValueError('When the number of atom type is 1,'
-                                 ' n_perm must be 0')
-            n_strain = config.getint('EA', 'n_strain')
-            if n_strain < 0:
-                raise ValueError('n_strain must be zero or positive int')
-            n_rand = config.getint('EA', 'n_rand')
-            if n_rand < 0:
-                raise ValueError('n_rand must be zero or positive int')
-            if n_crsov + n_perm + n_strain + n_rand != n_pop:
-                raise ValueError('n_crsov + n_perm + n_strain + n_rand'
-                                 ' must be n_pop')
-            n_elite = config.getint('EA', 'n_elite')
-            if n_elite < 0:
-                raise ValueError('n_elite must be non-negative int')
-            # -- n_fittest
-            try:
-                fit_reverse = config.getboolean('EA', 'fit_reverse')
-            except configparser.NoOptionError:
-                fit_reverse = False
-            try:
-                n_fittest = config.getint('EA', 'n_fittest')
-            except configparser.NoOptionError:
-                n_fittest = 0
-            if n_fittest < 0:
-                raise ValueError('n_fittest must be zero or positive int')
-            # -- mindist_ea
-            mindist_ea = []
-            for i in range(len(atype)):
-                tmp = config.get('EA', 'mindist_ea_{}'.format(i+1))
-                tmp = [float(x) for x in tmp.split()]    # character --> float
-                if not len(tmp) == len(atype):
-                    raise ValueError('not len(mindist_ea_{}) == len(atype)'.format(i+1))
-                mindist_ea.append(tmp)
-            # -- check symmetric matrix
-            for i in range(len(mindist_ea)):
-                for j in range(len(mindist_ea)):
-                    if i < j:
-                        if not mindist_ea[i][j] == mindist_ea[j][i]:
-                            raise ValueError('mindist_ea is not symmetric. ({}, {}) -->'
-                                             ' {}, ({}, {}) --> {}'.format(
-                                                 i, j, mindist_ea[i][j],
-                                                 j, i, mindist_ea[j][i]))
-            # -- select function
-            slct_func = config.get('EA', 'slct_func')
-            if slct_func not in ['TNM', 'RLT']:
-                raise ValueError('slct_func must be TNM or RLT')
-            if slct_func == 'TNM':
-                try:
-                    t_size = config.getint('EA', 't_size')
-                except configparser.NoOptionError:
-                    t_size = 3
-                if t_size < 2:
-                    raise ValueError('t_size must be greater than or equal to 2')
-            elif slct_func == 'RLT':
-                try:
-                    a_rlt = config.getfloat('EA', 'a_rlt')
-                except configparser.NoOptionError:
-                    a_rlt = 10.0
-                try:
-                    b_rlt = config.getfloat('EA', 'b_rlt')
-                except configparser.NoOptionError:
-                    b_rlt = 1.0
-            # -- crossover
-            try:
-                crs_lat = config.get('EA', 'crs_lat')
-            except configparser.NoOptionError:
-                crs_lat = 'equal'
-            if crs_lat not in ['equal', 'random']:
-                raise ValueError('crs_lat must be equal or random')
-            try:
-                nat_diff_tole = config.getint('EA', 'nat_diff_tole')
-            except configparser.NoOptionError:
-                nat_diff_tole = 4
-            if nat_diff_tole < 0:
-                raise ValueError('nat_diff_tole must be nen-negative int')
-            # -- permutation
-            try:
-                ntimes = config.getint('EA', 'ntimes')
-            except configparser.NoOptionError:
-                ntimes = 1
-            if ntimes <= 0:
-                raise ValueError('ntimes must be positive int')
-            try:
-                sigma_st = config.getfloat('EA', 'sigma_st')
-            except configparser.NoOptionError:
-                sigma_st = 0.5
-            if sigma_st <= 0:
-                raise ValueError('simga_st must be positive float')
-            # -- common
-            try:
-                maxcnt_ea = config.getint('EA', 'maxcnt_ea')
-            except configparser.NoOptionError:
-                maxcnt_ea = 50
-            # -- EA option
-            try:
-                maxgen_ea = config.getint('EA', 'maxgen_ea')
-            except configparser.NoOptionError:
-                maxgen_ea = 0
-            if maxgen_ea < 0:
-                raise ValueError('maxgen_ea must be non-negative int')
-            # # -- restart option
-            # try:
-            #     restart_gen = config.getint('EA', 'restart_gen')
-            # except configparser.NoOptionError:
-            #     restart_gen = 0
-            try:
-                emax_ea = config.getfloat('EA', 'emax_ea')
-            except (configparser.NoOptionError, configparser.NoSectionError):
-                emax_ea = None
-            try:
-                emin_ea = config.getfloat('EA', 'emin_ea')
-            except (configparser.NoOptionError, configparser.NoSectionError):
-                emin_ea = None
-            if emax_ea is not None and emin_ea is not None:
-                if emin_ea > emax_ea:
-                    raise ValueError('emax_ea < emin_ea, check emax_ea and emin_ea')
-
-        # ---------- global declaration for comman part in calc_code
-
-        # ---------- VASP
-        if calc_code == 'VASP':
-            # ------ read intput variables
-            kpt_flag = True
-            kppvol = config.get('VASP', 'kppvol')
-            kppvol = [int(x) for x in kppvol.split()]    # character --> int
-            if not len(kppvol) == nstage:
-                raise ValueError('not len(kppvol) == nstage,'
-                                 ' check kppvol and nstage')
-            try:
-                force_gamma = config.getboolean('VASP', 'force_gamma')
-            except configparser.NoOptionError:
-                force_gamma = False
-
-        # ---------- QE
-        elif calc_code == 'QE':
-            # ------ global declaration
-
-            # ------ read intput variables
-            kpt_flag = True
-            qe_infile = config.get('QE', 'qe_infile')
-            qe_outfile = config.get('QE', 'qe_outfile')
-            kppvol = config.get('QE', 'kppvol')
-            kppvol = [int(x) for x in kppvol.split()]    # character --> int
-            if not len(kppvol) == nstage:
-                raise ValueError('not len(kppvol) == nstage,'
-                                 ' check kppvol and nstage')
-            try:
-                force_gamma = config.getboolean('QE', 'force_gamma')
-            except configparser.NoOptionError:
-                force_gamma = False
-
-        # ---------- OpenMX
-        elif calc_code == 'OMX':
-            # ------ global declaration
-
-            upSpin = {}
-            downSpin = {}
-            # ------ read intput variables
-            kpt_flag = True
-            OMX_infile = config.get('OMX', 'OMX_infile')
-            OMX_outfile = config.get('OMX', 'OMX_outfile')
-            ValenceElec = config.get('OMX', 'ValenceElectrons')
-            ValElecIn = ValenceElec.split()
-            for i in range(0, len(ValElecIn), 3):
-                upSpin[ValElecIn[i]] = ValElecIn[i+1]
-                downSpin[ValElecIn[i]] = ValElecIn[i+2]
-            kppvol = config.get('OMX', 'kppvol')
-            kppvol = [int(x) for x in kppvol.split()]    # character --> int
-            if not len(kppvol) == nstage:
-                raise ValueError('not len(kppvol) == nstage,'
-                                 ' check kppvol and nstage')
-            try:
-                force_gamma = config.getboolean('OMX', 'force_gamma')
-            except configparser.NoOptionError:
-                force_gamma = False
-
-        # ---------- soiap
-        elif calc_code == 'soiap':
-            # ------ global declaration
-
-            # ------ read intput variables
-            soiap_infile = config.get('soiap', 'soiap_infile')
-            soiap_outfile = config.get('soiap', 'soiap_outfile')
-            soiap_cif = config.get('soiap', 'soiap_cif')
-            kpt_flag = False
-            force_gamma = False
-
-        # ---------- lammps
-        elif calc_code == 'LAMMPS':
-            # ------ global declaration
-
-            # ------ read intput variables
-            lammps_infile = config.get('LAMMPS', 'lammps_infile')
-            lammps_outfile = config.get('LAMMPS', 'lammps_outfile')
-            try:
-                lammps_potential = config.get('LAMMPS', 'lammps_potential')
-                lammps_potential = lammps_potential.split()
-            except configparser.NoOptionError:
-                lammps_potential = None
-            lammps_data = config.get('LAMMPS', 'lammps_data')
-            kpt_flag = False
-            force_gamma = False
-        else:
-            raise NotImplementedError('calc_code must be VASP, QE, soiap,'
-                                      ' or LAMMPS')
-
-        self.algo = algo
-        self.calc_code = calc_code
-        self.tot_struc = tot_struc
-        self.nstage = nstage
-        self.njob = njob
-        self.jobcmd = jobcmd
-        self.jobfile = jobfile
-        self.struc_mode = struc_mode
-        self.natot = natot
-        self.atype = atype
-        self.nat = nat
-        self.mol_file = mol_file
-        self.nmol = nmol
-        self.timeout_mol = timeout_mol
-        self.rot_mol = rot_mol
-        self.nrot = nrot
-        self.vol_factor = vol_factor
-        self.vol_mu = vol_mu
-        self.vol_sigma = vol_sigma
-        self.mindist = mindist
-        self.maxcnt = maxcnt
-        self.symprec = symprec
-        self.spgnum = spgnum
-        self.use_find_wy = use_find_wy
-        self.minlen = minlen
-        self.maxlen = maxlen
-        self.dangle = dangle
         self.stop_chkpt = stop_chkpt
         self.load_struc_flag = load_struc_flag
         self.stop_next_struc = stop_next_struc
@@ -738,6 +266,88 @@ class Rin:
         self.struc_step_flag = struc_step_flag
         self.force_step_flag = force_step_flag
         self.stress_step_flag = stress_step_flag
+
+    def process_bo(self, config, tot_struc):
+        # ------ global declaration
+        # ------ read intput variables
+        nselect_bo = config.getint('BO', 'nselect_bo')
+        if nselect_bo <= 0:
+            raise ValueError('nselect_bo <= 0, check nselect_bo')
+        elif tot_struc < nselect_bo:
+            raise ValueError('tot_struc < nselect_bo, check nselect_bo')
+        score = config.get('BO', 'score')
+        if score == 'TS' or score == 'EI' or score == 'PI':
+            pass
+        else:
+            raise ValueError('score must be TS, EI, or PI, check score')
+        try:
+            num_rand_basis = config.getint('BO', 'num_rand_basis')
+        except configparser.NoOptionError:
+            num_rand_basis = 0
+        try:
+            cdev = config.getfloat('BO', 'cdev')
+        except configparser.NoOptionError:
+            cdev = 0.001
+        dscrpt = config.get('BO', 'dscrpt')
+        if dscrpt == 'FP':
+            pass
+        else:
+            raise NotImplementedError('Now FP only')
+        # -- parameters for f-fingerprint
+        try:
+            fp_rmin = config.getfloat('BO', 'fp_rmin')
+        except configparser.NoOptionError:
+            fp_rmin = 0.5
+        try:
+            fp_rmax = config.getfloat('BO', 'fp_rmax')
+        except configparser.NoOptionError:
+            fp_rmax = 5.0
+        if fp_rmin < 0.0:
+            raise ValueError('fp_rmin < 0, check fp_rmin')
+        if fp_rmax < fp_rmin:
+            raise ValueError('fp_rmax < fp_rmin, check fp_rmin and fp_rmax')
+        try:
+            fp_npoints = config.getint('BO', 'fp_npoints')
+        except configparser.NoOptionError:
+            fp_npoints = 20
+        if fp_npoints <= 0:
+            raise ValueError('fp_npoints <= 0, check fp_npoints')
+        try:
+            fp_sigma = config.getfloat('BO', 'fp_sigma')
+        except configparser.NoOptionError:
+            fp_sigma = 1.0
+        if fp_sigma < 0:
+            raise ValueError('fp_sigma < 0, check fp_sigma')
+        # -- BO option
+        try:
+            max_select_bo = config.getint('BO', 'max_select_bo')
+        except configparser.NoOptionError:
+            max_select_bo = 0
+        if max_select_bo < 0:
+            raise ValueError('max_select_bo must be non-negative int')
+        try:
+            manual_select_bo = config.get('BO', 'manual_select_bo')
+            manual_select_bo = [int(x) for x in manual_select_bo.split()]
+        except configparser.NoOptionError:
+            manual_select_bo = []
+        if manual_select_bo:
+            for i in manual_select_bo:
+                if not 0 <= i < tot_struc:
+                    raise ValueError('manual_select_bo must be'
+                                     ' non-negative int'
+                                     ' and less than tot_struc')
+        try:
+            emax_bo = config.getfloat('BO', 'emax_bo')
+        except (configparser.NoOptionError, configparser.NoSectionError):
+            emax_bo = None
+        try:
+            emin_bo = config.getfloat('BO', 'emin_bo')
+        except (configparser.NoOptionError, configparser.NoSectionError):
+            emin_bo = None
+        if emax_bo is not None and emin_bo is not None:
+            if emin_bo > emax_bo:
+                raise ValueError('emax_bo < emin_bo, check emax_bo and emin_bo')
+
         self.nselect_bo = nselect_bo
         self.score = score
         self.num_rand_basis = num_rand_basis
@@ -751,10 +361,154 @@ class Rin:
         self.manual_select_bo = manual_select_bo
         self.emax_bo = emax_bo
         self.emin_bo = emin_bo
-        if algo == 'LAQA':
-            self.nselect_laqa = nselect_laqa
-            self.wf_laqa = wf_laqa
-            self.ws_laqa = ws_laqa
+
+    def process_laqa(self, config):
+        # ------ read intput variables
+        nselect_laqa = config.getint('LAQA', 'nselect_laqa')
+
+        try:
+            wf_laqa = config.getfloat('LAQA', 'wf_laqa')
+        except configparser.NoOptionError:
+            wf_laqa = 1.0
+        try:
+            ws_laqa = config.getfloat('LAQA', 'ws_laqa')
+        except configparser.NoOptionError:
+            ws_laqa = 1.0
+        self.nselect_laqa = nselect_laqa
+        self.wf_laqa = wf_laqa
+        self.ws_laqa = ws_laqa
+
+    def process_ea(self, config, atype):
+        # global restart_gen
+        # ------ read intput variables
+        # -- number of structures
+        n_pop = config.getint('EA', 'n_pop')
+        if n_pop <= 0:
+            raise ValueError('n_pop must be positive int')
+        n_crsov = config.getint('EA', 'n_crsov')
+        if n_crsov < 0:
+            raise ValueError('n_crsov must be zero or positive int')
+        n_perm = config.getint('EA', 'n_perm')
+        if n_perm < 0:
+            raise ValueError('n_perm must be zero or positive int')
+        if n_perm != 0 and len(atype) == 1:
+            raise ValueError('When the number of atom type is 1,'
+                             ' n_perm must be 0')
+        n_strain = config.getint('EA', 'n_strain')
+        if n_strain < 0:
+            raise ValueError('n_strain must be zero or positive int')
+        n_rand = config.getint('EA', 'n_rand')
+        if n_rand < 0:
+            raise ValueError('n_rand must be zero or positive int')
+        if n_crsov + n_perm + n_strain + n_rand != n_pop:
+            raise ValueError('n_crsov + n_perm + n_strain + n_rand'
+                             ' must be n_pop')
+        n_elite = config.getint('EA', 'n_elite')
+        if n_elite < 0:
+            raise ValueError('n_elite must be non-negative int')
+        # -- n_fittest
+        try:
+            fit_reverse = config.getboolean('EA', 'fit_reverse')
+        except configparser.NoOptionError:
+            fit_reverse = False
+        try:
+            n_fittest = config.getint('EA', 'n_fittest')
+        except configparser.NoOptionError:
+            n_fittest = 0
+        if n_fittest < 0:
+            raise ValueError('n_fittest must be zero or positive int')
+        # -- mindist_ea
+        mindist_ea = []
+        for i in range(len(atype)):
+            tmp = config.get('EA', 'mindist_ea_{}'.format(i+1))
+            tmp = [float(x) for x in tmp.split()]    # character --> float
+            if not len(tmp) == len(atype):
+                raise ValueError('not len(mindist_ea_{}) == len(atype)'.format(i+1))
+            mindist_ea.append(tmp)
+        # -- check symmetric matrix
+        for i in range(len(mindist_ea)):
+            for j in range(len(mindist_ea)):
+                if i < j:
+                    if not mindist_ea[i][j] == mindist_ea[j][i]:
+                        raise ValueError('mindist_ea is not symmetric. ({}, {}) -->'
+                                         ' {}, ({}, {}) --> {}'.format(
+                                             i, j, mindist_ea[i][j],
+                                             j, i, mindist_ea[j][i]))
+        # -- select function
+        slct_func = config.get('EA', 'slct_func')
+        if slct_func not in ['TNM', 'RLT']:
+            raise ValueError('slct_func must be TNM or RLT')
+        if slct_func == 'TNM':
+            try:
+                t_size = config.getint('EA', 't_size')
+            except configparser.NoOptionError:
+                t_size = 3
+            if t_size < 2:
+                raise ValueError('t_size must be greater than or equal to 2')
+        elif slct_func == 'RLT':
+            try:
+                a_rlt = config.getfloat('EA', 'a_rlt')
+            except configparser.NoOptionError:
+                a_rlt = 10.0
+            try:
+                b_rlt = config.getfloat('EA', 'b_rlt')
+            except configparser.NoOptionError:
+                b_rlt = 1.0
+        # -- crossover
+        try:
+            crs_lat = config.get('EA', 'crs_lat')
+        except configparser.NoOptionError:
+            crs_lat = 'equal'
+        if crs_lat not in ['equal', 'random']:
+            raise ValueError('crs_lat must be equal or random')
+        try:
+            nat_diff_tole = config.getint('EA', 'nat_diff_tole')
+        except configparser.NoOptionError:
+            nat_diff_tole = 4
+        if nat_diff_tole < 0:
+            raise ValueError('nat_diff_tole must be nen-negative int')
+        # -- permutation
+        try:
+            ntimes = config.getint('EA', 'ntimes')
+        except configparser.NoOptionError:
+            ntimes = 1
+        if ntimes <= 0:
+            raise ValueError('ntimes must be positive int')
+        try:
+            sigma_st = config.getfloat('EA', 'sigma_st')
+        except configparser.NoOptionError:
+            sigma_st = 0.5
+        if sigma_st <= 0:
+            raise ValueError('simga_st must be positive float')
+        # -- common
+        try:
+            maxcnt_ea = config.getint('EA', 'maxcnt_ea')
+        except configparser.NoOptionError:
+            maxcnt_ea = 50
+        # -- EA option
+        try:
+            maxgen_ea = config.getint('EA', 'maxgen_ea')
+        except configparser.NoOptionError:
+            maxgen_ea = 0
+        if maxgen_ea < 0:
+            raise ValueError('maxgen_ea must be non-negative int')
+        # # -- restart option
+        # try:
+        #     restart_gen = config.getint('EA', 'restart_gen')
+        # except configparser.NoOptionError:
+        #     restart_gen = 0
+        try:
+            emax_ea = config.getfloat('EA', 'emax_ea')
+        except (configparser.NoOptionError, configparser.NoSectionError):
+            emax_ea = None
+        try:
+            emin_ea = config.getfloat('EA', 'emin_ea')
+        except (configparser.NoOptionError, configparser.NoSectionError):
+            emin_ea = None
+        if emax_ea is not None and emin_ea is not None:
+            if emin_ea > emax_ea:
+                raise ValueError('emax_ea < emin_ea, check emax_ea and emin_ea')
+
         self.n_pop = n_pop
         self.n_crsov = n_crsov
         self.n_perm = n_perm
@@ -776,22 +530,223 @@ class Rin:
         self.maxgen_ea = maxgen_ea
         self.emax_ea = emax_ea
         self.emin_ea = emin_ea
+
+    def process_vasp(self, config, nstage):
+        # ------ read intput variables
+        kpt_flag = True
+        kppvol = config.get('VASP', 'kppvol')
+        kppvol = [int(x) for x in kppvol.split()]    # character --> int
+        if not len(kppvol) == nstage:
+            raise ValueError('not len(kppvol) == nstage,'
+                             ' check kppvol and nstage')
+        try:
+            force_gamma = config.getboolean('VASP', 'force_gamma')
+        except configparser.NoOptionError:
+            force_gamma = False
+        self.kppvol = kppvol
+        self.kpt_flag = kpt_flag
+        self.force_gamma = force_gamma
+
+    def process_qe(self, config, nstage):
+        # ------ global declaration
+
+        # ------ read intput variables
+        kpt_flag = True
+        qe_infile = config.get('QE', 'qe_infile')
+        qe_outfile = config.get('QE', 'qe_outfile')
+        kppvol = config.get('QE', 'kppvol')
+        kppvol = [int(x) for x in kppvol.split()]    # character --> int
+        if not len(kppvol) == nstage:
+            raise ValueError('not len(kppvol) == nstage,'
+                             ' check kppvol and nstage')
+        try:
+            force_gamma = config.getboolean('QE', 'force_gamma')
+        except configparser.NoOptionError:
+            force_gamma = False
         self.kppvol = kppvol
         self.kpt_flag = kpt_flag
         self.force_gamma = force_gamma
         self.qe_infile = qe_infile
         self.qe_outfile = qe_outfile
+
+    def process_qmx(self, config, nstage):
+        # ------ global declaration
+        OMX_infile = None
+        OMX_outfile = None
+        upSpin = {}
+        downSpin = {}
+        # ------ read intput variables
+        kpt_flag = True
+        OMX_infile = config.get('OMX', 'OMX_infile')
+        OMX_outfile = config.get('OMX', 'OMX_outfile')
+        ValenceElec = config.get('OMX', 'ValenceElectrons')
+        ValElecIn = ValenceElec.split()
+        for i in range(0, len(ValElecIn), 3):
+            upSpin[ValElecIn[i]] = ValElecIn[i+1]
+            downSpin[ValElecIn[i]] = ValElecIn[i+2]
+        kppvol = config.get('OMX', 'kppvol')
+        kppvol = [int(x) for x in kppvol.split()]    # character --> int
+        if not len(kppvol) == nstage:
+            raise ValueError('not len(kppvol) == nstage,'
+                             ' check kppvol and nstage')
+        try:
+            force_gamma = config.getboolean('OMX', 'force_gamma')
+        except configparser.NoOptionError:
+            force_gamma = False
+
         self.OMX_infile = OMX_infile
         self.OMX_outfile = OMX_outfile
-        self.upSpin = upSpin
-        self.downSpin = downSpin
+        self.kppvol = kppvol
+        self.kpt_flag = kpt_flag
+        self.force_gamma = force_gamma
+
+    def process_soiap(self, config):
+        # ------ global declaration
+        soiap_infile = None
+        soiap_outfile = None
+        soiap_cif = None
+        # ------ read intput variables
+        soiap_infile = config.get('soiap', 'soiap_infile')
+        soiap_outfile = config.get('soiap', 'soiap_outfile')
+        soiap_cif = config.get('soiap', 'soiap_cif')
+        kpt_flag = False
+        force_gamma = False
+
         self.soiap_infile = soiap_infile
         self.soiap_outfile = soiap_outfile
         self.soiap_cif = soiap_cif
+        self.kpt_flag = kpt_flag
+        self.force_gamma = force_gamma
+
+    def process_lammps(self, config):
+        # ------ global declaration
+        # ------ read intput variables
+        lammps_infile = config.get('LAMMPS', 'lammps_infile')
+        lammps_outfile = config.get('LAMMPS', 'lammps_outfile')
+        try:
+            lammps_potential = config.get('LAMMPS', 'lammps_potential')
+            lammps_potential = lammps_potential.split()
+        except configparser.NoOptionError:
+            lammps_potential = None
+        lammps_data = config.get('LAMMPS', 'lammps_data')
+        kpt_flag = False
+        force_gamma = False
         self.lammps_infile = lammps_infile
         self.lammps_outfile = lammps_outfile
         self.lammps_potential = lammps_potential
         self.lammps_data = lammps_data
+        self.kpt_flag = kpt_flag
+        self.force_gamma = force_gamma
+
+    def readin(self, cryspy_in: Union[str, configparser.ConfigParser, io.StringIO]):
+        """
+        Args:
+            cryspy_in (configparser.ConfigParser|str): 'crypy.in' or its configparser instance.
+        """
+        print("cryspy_in", cryspy_in)
+        if isinstance(cryspy_in, configparser.ConfigParser):
+            config = cryspy_in
+        elif isinstance(cryspy_in, str):
+            # ---------- read cryspy.in
+            if not os.path.isfile(cryspy_in):
+                raise IOError(f'Could not find {cryspy_in} file')
+            config = configparser.ConfigParser(allow_no_value=False)
+            config.read(cryspy_in)
+            print(f"called config.read {cryspy_in}")
+        elif isinstance(cryspy_in, io.StringIO):
+            config = configparser.ConfigParser(allow_no_value=False)
+            content = cryspy_in.read()
+            config.read_string(content)
+            print("config is read from io.StringIO")
+        else:
+            raise TypeError(f'unknown type of cryspy_in. type={type(cryspy_in)}')
+
+        algo = None
+        calc_code = None
+        tot_struc = None
+        nstage = None
+        njob = None
+        jobcmd = None
+        jobfile = None
+
+        append_struc_ea = None
+
+        # ---------- basic
+        # ------ global declaration
+
+        # ------ read intput variables
+        calc_code = config.get('basic', 'calc_code')
+        if calc_code not in ['VASP', 'QE', 'soiap', 'LAMMPS', 'OMX']:
+            raise NotImplementedError(
+                'calc_code must be VASP, QE, OMX, soiap, or LAMMPS')
+        algo = config.get('basic', 'algo')
+        if algo not in ['RS', 'BO', 'LAQA', 'EA']:
+            raise NotImplementedError('algo must be RS, BO, LAQA, or EA')
+        if algo == 'LAQA':
+            if calc_code not in ['VASP', 'QE', 'soiap', 'LAMMPS']:
+                raise NotImplementedError('LAQA: only VASP, QE, and soiap for now')
+        tot_struc = config.getint('basic', 'tot_struc')
+        if tot_struc <= 0:
+            raise ValueError('tot_struc <= 0, check tot_struc')
+        nstage = config.getint('basic', 'nstage')
+        if nstage <= 0:
+            raise ValueError('nstage <= 0, check nstage')
+
+        njob = config.getint('basic', 'njob')
+        if njob <= 0:
+            raise ValueError('njob <= 0, check njob')
+        jobcmd = config.get('basic', 'jobcmd')
+        jobfile = config.get('basic', 'jobfile')
+
+        # ---------- structure
+        # ------ global declaration
+        self.process_structure(config)
+
+        # ---------- option
+        # ------ global declaration
+        self.process_option(config, tot_struc, calc_code, algo)
+
+        # ---------- BO
+        if algo == 'BO':
+            self.process_bo(config, tot_struc)
+
+        # ---------- LAQA
+        if algo == 'LAQA':
+            self.process_laqa(config)
+        # ---------- EA
+        if algo == 'EA' or append_struc_ea:
+            # ------ global declaration
+            self.process_ea(config, atype)
+
+        # ---------- global declaration for comman part in calc_code
+
+        # ---------- VASP
+        if calc_code == 'VASP':
+            self.process_vasp(config, nstage)
+        # ---------- QE
+        elif calc_code == 'QE':
+            self.process_qe(config, nstage)
+        # ---------- OpenMX
+        elif calc_code == 'OMX':
+            self.process_qmx(config, nstage)
+        # ---------- soiap
+        elif calc_code == 'soiap':
+            self.process_soiap(config)
+        # ---------- lammps
+        elif calc_code == 'LAMMPS':
+            self.process_lammps(config)
+
+        else:
+            raise NotImplementedError('calc_code must be VASP, QE, soiap,'
+                                      ' or LAMMPS')
+
+        self.algo = algo
+        self.calc_code = calc_code
+        self.tot_struc = tot_struc
+        self.nstage = nstage
+        self.njob = njob
+        self.jobcmd = jobcmd
+        self.jobfile = jobfile
 
     def spglist(self, spgnum):
         tmpspg = []
@@ -816,6 +771,7 @@ class Rin:
         return tmpspg
 
     def writeout(self):
+        raise Exception('writeout is called.')
         algo = self.algo
         calc_code = self.calc_code
         tot_struc = self.tot_struc
@@ -865,7 +821,7 @@ class Rin:
         manual_select_bo = self.manual_select_bo
         emax_bo = self.emax_bo
         emin_bo = self.emin_bo
-        if algo=='LAQA':
+        if algo == 'LAQA':
             nselect_laqa = self.nselect_laqa
             wf_laqa = self.wf_laqa
             ws_laqa = self.ws_laqa
@@ -1071,6 +1027,7 @@ class Rin:
             fout.write('\n\n')
 
     def save_stat(self, stat):    # only 1st run
+        raise Exception('save_stat is called.')
         algo = self.algo
         calc_code = self.calc_code
         tot_struc = self.tot_struc
@@ -1314,6 +1271,7 @@ class Rin:
         io_stat.write_stat(stat)
 
     def diffinstat(self, stat):
+        raise Exception('diffinstat is called.')
         algo = self.algo
         calc_code = self.calc_code
         tot_struc = self.tot_struc
@@ -1799,7 +1757,6 @@ class Rin:
                 io_stat.set_input_common(stat, sec, 'nselect_laqa', nselect_laqa)
                 logic_change = True
 
-
         # ------ EA
         sec = 'EA'
         if algo == 'EA':
@@ -1996,7 +1953,7 @@ class Rin:
             io_stat.write_stat(stat)
 
     def diff_out(self, var_str, old_var, var):
-
+        raise Exception('diff_out is called.')
         print('Changed {0} from {1} to {2}'.format(var_str, old_var, var))
         with open('cryspy.out', 'a') as fout:
             fout.write('\n#### Changed {0} from {1} to {2}\n'.format(
