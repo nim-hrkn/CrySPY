@@ -445,6 +445,8 @@ class Rin:
                 t_size = 3
             if t_size < 2:
                 raise ValueError('t_size must be greater than or equal to 2')
+            self.t_size = t_size
+
         elif slct_func == 'RLT':
             try:
                 a_rlt = config.getfloat('EA', 'a_rlt')
@@ -454,6 +456,8 @@ class Rin:
                 b_rlt = config.getfloat('EA', 'b_rlt')
             except configparser.NoOptionError:
                 b_rlt = 1.0
+            self.a_rlt = a_rlt
+            self.b_rlt = b_rlt
         # -- crossover
         try:
             crs_lat = config.get('EA', 'crs_lat')
@@ -519,9 +523,7 @@ class Rin:
         self.n_fittest = n_fittest
         self.mindist_ea = mindist_ea
         self.slct_func = slct_func
-        self.t_size = t_size
-        self.a_rlt = a_rlt
-        self.b_rlt = b_rlt
+
         self.crs_lat = crs_lat
         self.nat_diff_tole = nat_diff_tole
         self.ntimes = ntimes
@@ -699,11 +701,9 @@ class Rin:
         jobfile = config.get('basic', 'jobfile')
 
         # ---------- structure
-        # ------ global declaration
         self.process_structure(config)
 
         # ---------- option
-        # ------ global declaration
         self.process_option(config, tot_struc, calc_code, algo)
 
         # ---------- BO
@@ -715,8 +715,8 @@ class Rin:
             self.process_laqa(config)
         # ---------- EA
         if algo == 'EA' or append_struc_ea:
-            # ------ global declaration
-            self.process_ea(config, atype)
+            # atype if from structure
+            self.process_ea(config, self.atype)
 
         # ---------- global declaration for comman part in calc_code
 
