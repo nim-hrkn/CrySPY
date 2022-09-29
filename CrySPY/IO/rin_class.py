@@ -674,9 +674,7 @@ class Rin:
         append_struc_ea = None
 
         # ---------- basic
-        # ------ global declaration
 
-        # ------ read intput variables
         calc_code = config.get('basic', 'calc_code')
         if calc_code not in ['VASP', 'QE', 'soiap', 'LAMMPS', 'OMX']:
             raise NotImplementedError(
@@ -717,8 +715,6 @@ class Rin:
         if algo == 'EA' or append_struc_ea:
             # atype if from structure
             self.process_ea(config, self.atype)
-
-        # ---------- global declaration for comman part in calc_code
 
         # ---------- VASP
         if calc_code == 'VASP':
