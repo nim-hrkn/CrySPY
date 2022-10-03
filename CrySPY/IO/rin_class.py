@@ -3,7 +3,6 @@ Read input from cryspy.in
 '''
 
 import configparser
-from email.headerregistry import ContentTransferEncodingHeader
 import os
 import io
 
@@ -200,7 +199,7 @@ class Rin:
         self.maxlen = maxlen
         self.dangle = dangle
 
-    def process_option(self, config, tot_struc, calc_code, algo):
+    def process_option(self, algo, config, tot_struc, calc_code):
         # ------ read intput variables
         try:
             stop_chkpt = config.getint('option', 'stop_chkpt')
@@ -702,7 +701,7 @@ class Rin:
         self.process_structure(config)
 
         # ---------- option
-        self.process_option(config, tot_struc, calc_code, algo)
+        self.process_option(algo, config, tot_struc, calc_code)
 
         # ---------- BO
         if algo == 'BO':
